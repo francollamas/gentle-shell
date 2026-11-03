@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = dirname(fileURLToPath(import.meta.url));
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const api = "https://api.github.com/repos/Gentleman-Programming/gentle-shell/releases";
 
 function run(program, args, capture = false) {
