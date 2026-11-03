@@ -5,15 +5,17 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, realpathS
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { piConfig } from "./pi-config.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const agentHome = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
+const config = piConfig();
+const agentHome = config.agentHome;
 const settingsPath = join(agentHome, "settings.json");
 const link = join(homedir(), ".local", "bin", "gentle-update");
 const target = join(root, "custom", "actualizar-custom.mjs");
 
 function run(program, args, capture = false) {
-	const result = spawnSync(program, args, { cwd: root, encoding: "utf8", stdio: capture ? "pipe" : "inherit" });
+	const result = spawnSync(program === "pi" ? config.pi : program, args, { cwd: root, env: config.env, encoding: "utf8", stdio: capture ? "pipe" : "inherit" });
 	if (result.error || result.status !== 0) throw new Error(`${program} ${args.join(" ")}: ${result.error?.message || (capture ? result.stderr.trim() : `código ${result.status}`)}`);
 	return capture ? result.stdout.trim() : "";
 }
@@ -44,6 +46,7 @@ function linkCommand() {
 
 try {
 	if (process.argv.length !== 2) throw new Error("Uso: ./custom/instalar-custom.mjs (sin argumentos)");
+	console.log(`Directorio de Pi: ${agentHome}`);
 	if (run("git", ["branch", "--show-current"], true) !== "custom") throw new Error("Cambia primero a la rama custom.");
 	if (process.env.GENTLE_PI_SKIP_GENTLE_AI_INSTALL === "1") throw new Error("Desactiva GENTLE_PI_SKIP_GENTLE_AI_INSTALL antes de instalar.");
 	// Tools and Engram itself are prerequisites; do not install system-wide software implicitly.
