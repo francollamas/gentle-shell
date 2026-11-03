@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { piConfig } from "./pi-config.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const config = piConfig();
 const api = "https://api.github.com/repos/Gentleman-Programming/gentle-shell/releases";
 
 function run(program, args, capture = false) {
-	const result = spawnSync(program, args, { cwd: root, encoding: "utf8", stdio: capture ? "pipe" : "inherit" });
+	const result = spawnSync(program === "pi" ? config.pi : program, args, { cwd: root, env: config.env, encoding: "utf8", stdio: capture ? "pipe" : "inherit" });
 	if (result.error || result.status !== 0) throw new Error(`${program} ${args.join(" ")}: ${result.error?.message || (capture ? result.stderr.trim() : `salió con código ${result.status}`)}`);
 	return capture ? result.stdout.trim() : "";
 }
@@ -31,7 +32,7 @@ function compare(a, b) {
 	return y[0] - x[0] || y[1] - x[1] || y[2] - x[2];
 }
 function registerPi() {
-	const home = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
+	const home = config.agentHome;
 	const settingsPath = join(home, "settings.json");
 	const settings = existsSync(settingsPath) ? JSON.parse(readFileSync(settingsPath, "utf8")) : {};
 	const packages = settings.packages ?? [];
@@ -54,6 +55,7 @@ function registerPi() {
 
 try {
 	if (process.argv.length !== 2) throw new Error("Uso: ./actualizar-custom.mjs (sin argumentos)");
+	console.log(`Directorio de Pi: ${config.agentHome}`);
 	if (git("branch", "--show-current") !== "custom") throw new Error("Debes estar en la rama custom.");
 	if (process.env.GENTLE_PI_SKIP_GENTLE_AI_INSTALL === "1") throw new Error("Desactiva GENTLE_PI_SKIP_GENTLE_AI_INSTALL antes de continuar.");
 	run("pi", ["--version"]);

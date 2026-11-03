@@ -6,6 +6,7 @@ Estas instrucciones describen la configuración personal del usuario. No sustitu
 
 - La rama `custom` contiene los cambios personales y se actualiza desde **releases estables oficiales**, no desde `upstream/main`.
 - Pi se instala por separado y carga la raíz de este checkout como paquete local `gentle-pi`; no se debe sustituir por `npm:gentle-pi`. Pi carga la rama activa y también cambios sin commit.
+- Por defecto los scripts usan `~/.config/pi/agent`, incluido `bin/pi` si existe, y propagan `PI_CODING_AGENT_DIR` a sus procesos hijos. Una variable `PI_CODING_AGENT_DIR` absoluta explícita tiene prioridad. Al iniciar Pi fuera de los scripts, esa variable también debe apuntar al mismo directorio: instalar el ejecutable allí no garantiza que Pi use esa configuración.
 - `custom/instalar-custom.mjs` prepara dependencias y runtime, registra el checkout, instala los complementos y crea `~/.local/bin/gentle-update`. Requiere Node, pnpm, Pi y Engram instalados. No modifica el historial de Git.
 - `custom/actualizar-custom.mjs` consulta la última release estable oficial, trae tags de `upstream`, hace rebase de `custom` si corresponde y prepara dependencias/runtime. El enlace `gentle-update` apunta a este archivo. No hace push ni actualiza los complementos de Pi.
 - Para aplicar cambios del checkout, reiniciar Pi o usar `/reload`; los cambios en dependencias pueden requerir `gentle-update`. Algunos cambios pueden requerir un reinicio completo o regenerar `runtime/` con `pnpm run build:runtime-modules`.
