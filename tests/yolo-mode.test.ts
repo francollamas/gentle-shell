@@ -8,7 +8,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { createGentleAiExtension } from "../extensions/gentle-ai.ts";
 import { YOLO_STATUS_TEXT } from "../lib/yolo-session-policy.ts";
 
-const ON_TEXT = "🚀 YOLO ON 🔥 — destructive confirmations remain";
+const ON_TEXT = "YOLO";
 const USAGE = "Use /gentle:yolo enable|disable|status. State unchanged.";
 const STALE_MENU = "YOLO unchanged — the session changed while the menu was open.";
 const menuTitle = (state: "ON" | "OFF") => `🚀 Gentle YOLO 🔥 — standing permission (current: ${state})`;
@@ -65,7 +65,7 @@ export function harness(overrides: NodeJS.ProcessEnv = {}) {
 	};
 }
 
-test("only /gentle:yolo is registered and the ON text carries the rocket and fire markers", () => {
+test("only /gentle:yolo is registered and explicit status remains available", () => {
 	const h = harness();
 	assert.equal(h.commands.has("yolo"), false, "bare yolo command is not registered");
 	assert.ok(h.commands.has("gentle:yolo"));
@@ -77,14 +77,14 @@ test("human command enable/disable/status/invalid and status/widget clearing", a
 	assert.equal(h.tools.some((name) => name.includes("yolo")), false);
 	await h.command("status"); assert.match(h.notices.at(-1)!, /OFF/);
 	await h.command("enable");
-	assert.equal(h.statuses.get("gentle:yolo"), ON_TEXT);
-	assert.deepEqual(h.widgets.get("gentle:yolo"), [ON_TEXT]);
+	assert.equal(h.statuses.get("gentle:yolo"), undefined);
+	assert.equal(h.widgets.get("gentle:yolo"), undefined);
 	for (const invalid of ["invalid", "on", "off", "toggle"]) {
 		await h.command(invalid);
 		assert.equal(h.notices.at(-1), USAGE);
-		assert.equal(h.statuses.get("gentle:yolo"), ON_TEXT, `${invalid} leaves state unchanged`);
+		assert.equal(h.statuses.get("gentle:yolo"), undefined, `${invalid} leaves the indicator hidden`);
 	}
-	await h.command("status"); assert.match(h.notices.at(-1)!, /ON/);
+	await h.command("status"); assert.equal(h.notices.at(-1), ON_TEXT);
 	await h.command("disable"); assert.equal(h.statuses.get("gentle:yolo"), undefined);
 	assert.equal(h.widgets.get("gentle:yolo"), undefined);
 	await h.command("status"); assert.match(h.notices.at(-1)!, /OFF/);
@@ -96,7 +96,7 @@ test("no argument without a select-capable UI reports status and never toggles",
 	assert.equal(h.statuses.get("gentle:yolo"), undefined);
 	await h.command("enable");
 	await h.command(""); assert.equal(h.notices.at(-1), ON_TEXT);
-	assert.equal(h.statuses.get("gentle:yolo"), ON_TEXT);
+	assert.equal(h.statuses.get("gentle:yolo"), undefined);
 	let prompts = 0;
 	h.setSelect(async () => { prompts++; return "disable"; });
 	Object.assign(h.ctx, { hasUI: false });
@@ -118,10 +118,10 @@ test("no-argument menu shows the fire title and live state; only an explicit sel
 	answer = "status"; await h.command("");
 	assert.equal(h.notices.at(-1), "YOLO OFF"); assert.equal(h.statuses.get("gentle:yolo"), undefined);
 	answer = "enable"; await h.command("");
-	assert.equal(h.statuses.get("gentle:yolo"), ON_TEXT); assert.equal(h.notices.at(-1), ON_TEXT);
+	assert.equal(h.statuses.get("gentle:yolo"), undefined); assert.equal(h.notices.at(-1), ON_TEXT);
 	answer = undefined; await h.command("");
 	assert.equal(prompts.at(-1)!.title, menuTitle("ON"));
-	assert.equal(h.statuses.get("gentle:yolo"), ON_TEXT, "cancel leaves ON unchanged");
+	assert.equal(h.statuses.get("gentle:yolo"), undefined, "cancel keeps the indicator hidden");
 	answer = "disable"; await h.command("");
 	assert.equal(h.statuses.get("gentle:yolo"), undefined); assert.equal(h.notices.at(-1), "YOLO OFF");
 	const shown = prompts.length;

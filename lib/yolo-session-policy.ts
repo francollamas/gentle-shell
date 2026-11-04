@@ -9,8 +9,8 @@ export const MODE_STATUS_KEY = "gentle:mode";
 export const AUTO_MODE_NOTICE = "Auto uses additional model calls with separate usage accounting; hard safety and independent consent remain.";
 
 export const YOLO_STATUS_KEY = "gentle:yolo";
-export const YOLO_STATUS_TEXT = "🚀 YOLO ON 🔥 — destructive confirmations remain";
-export const SUPER_YOLO_STATUS_TEXT = "💥 SUPER YOLO ON — no permission prompts; private paths stay blocked";
+export const YOLO_STATUS_TEXT = "YOLO";
+export const SUPER_YOLO_STATUS_TEXT = "SUPER YOLO";
 export const SUPER_YOLO_DIRECTIVE = `<gentle-super-yolo-session>
 SUPER YOLO session standing permission is ON, authorized by the human for this live primary session and canonical workspace. No permission questions are asked in this mode: proceed through ordinary and destructive shell work (including rm, resets, force operations and configured-guard confirmations) without confirmation dialogs, and make implementation and delivery choices directly.
 The ONLY hard line is private material: never read, print, copy, transmit or commit secrets or private credentials — .env files, .ssh, keychains, *.pem/*.key/*.p12/*.pfx, secrets/ directories, cloud credential files. If a task seems to need them, stop and ask the human.
@@ -129,7 +129,7 @@ export function registerYoloSessionPolicy(pi: ExtensionAPI, env: NodeJS.ProcessE
 	// generation bump or cwd change still invalidates a shared slot.
 	let capturedMode: (ModeIdentity & { cwd: string; generation: number; admission: string }) | undefined;
 	// Rendered strings last published for each context; identical repaints are skipped.
-	const published = new WeakMap<ExtensionContext, { yolo: string | undefined; modeText: string }>();
+	const published = new WeakMap<ExtensionContext, { modeText: string | undefined }>();
 	const primary = () => env.GENTLE_PI_AGENTS_CHILD !== "1";
 	const interactive = (ctx: ExtensionContext): boolean => {
 		if (!primary() || !ctx.hasUI) return false;
@@ -147,15 +147,14 @@ export function registerYoloSessionPolicy(pi: ExtensionAPI, env: NodeJS.ProcessE
 		const ids = seen.get(scope.manager) ?? new Set<string>(); ids.add(scope.id); seen.set(scope.manager, ids);
 	};
 	const publish = (ctx: ExtensionContext): void => {
-		const yolo = liveMode === "yolo" ? YOLO_STATUS_TEXT : liveMode === "super-yolo" ? SUPER_YOLO_STATUS_TEXT : undefined;
-		const modeText = `Permissions: ${liveMode.toUpperCase()}`;
+		const modeText = liveMode === "yolo" || liveMode === "super-yolo" ? undefined : `Permissions: ${liveMode.toUpperCase()}`;
 		const previous = published.get(ctx);
-		if (previous && previous.yolo === yolo && previous.modeText === modeText) return;
+		if (previous && previous.modeText === modeText) return;
 		let painted = true;
-		try { ctx.ui.setStatus(YOLO_STATUS_KEY, yolo); } catch { painted = false; /* display only */ }
-		try { ctx.ui.setWidget(YOLO_STATUS_KEY, yolo ? [yolo] : undefined); } catch { painted = false; /* display only */ }
+		try { ctx.ui.setStatus(YOLO_STATUS_KEY, undefined); } catch { painted = false; /* display only */ }
+		try { ctx.ui.setWidget(YOLO_STATUS_KEY, undefined); } catch { painted = false; /* display only */ }
 		try { ctx.ui.setStatus(MODE_STATUS_KEY, modeText); } catch { painted = false; /* display only */ }
-		if (painted) published.set(ctx, { yolo, modeText });
+		if (painted) published.set(ctx, { modeText });
 	};
 	const changed = (ctx: ExtensionContext): void => {
 		generation += 1; publish(ctx);

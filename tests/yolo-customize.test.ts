@@ -143,7 +143,7 @@ for (const order of ["owner-first", "shell-first"]) test(`Editor YOLO menu and s
 	assert.equal(await h.controller().active(h.ctx), false, "render/preview/navigation never grant");
 	await h.apply("\r");
 	assert.match(text(view), /YOLO: ON · session only/);
-	assert.equal(h.statuses.get(yolo.YOLO_STATUS_KEY), yolo.YOLO_STATUS_TEXT);
+	assert.equal(h.statuses.get(yolo.YOLO_STATUS_KEY), undefined);
 	await h.command("disable"); await settle(() => /YOLO: OFF/.test(text(view)));
 	assert.equal(h.widgets.get(yolo.YOLO_STATUS_KEY), undefined);
 	await h.command("enable"); await settle(() => /YOLO: ON/.test(text(view)));
@@ -272,4 +272,3 @@ test("real Theme and existing component obey narrow dimensions with invisible co
 	assert.equal(await h.controller().active(h.ctx), false);
 	open.close(); await open.result;
 });
-

@@ -182,7 +182,7 @@ function promptSgrCommands(parameters: string): number[][] {
 }
 
 // Rearm only the panel background, leaving marker/inversion bytes intact.
-function rearmPromptBackground(text: string, background: string): string {
+export function rearmPromptBackground(text: string, background: string): string {
 	return text.replace(/\x1b\[([\d;]*)m/g, (sgr, parameters: string) =>
 		promptSgrCommands(parameters).some(([code]) => code === 0 || code === 49) ? sgr + background : sgr);
 }
