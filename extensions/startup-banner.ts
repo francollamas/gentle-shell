@@ -27,6 +27,13 @@ const BANNER_PALETTES: Record<BannerColor, { rose: [number, number, number]; lab
   yellow: { rose: [255, 210, 95], label: [210, 165, 65], value: [255, 225, 135], logoFresh: [255, 215, 105], logoDim: [105, 75, 25] },
   green: { rose: [110, 220, 145], label: [85, 175, 115], value: [145, 240, 170], logoFresh: [120, 230, 150], logoDim: [30, 95, 50] },
 };
+// Catppuccin Latte accents and neutral text, for readable light backgrounds.
+const LIGHT_BANNER_PALETTES: typeof BANNER_PALETTES = {
+  pink: { rose: [136, 57, 239], label: [76, 79, 105], value: [136, 57, 239], logoFresh: [136, 57, 239], logoDim: [188, 192, 204] },
+  cyan: { rose: [23, 146, 153], label: [76, 79, 105], value: [23, 146, 153], logoFresh: [23, 146, 153], logoDim: [188, 192, 204] },
+  yellow: { rose: [223, 142, 29], label: [76, 79, 105], value: [223, 142, 29], logoFresh: [223, 142, 29], logoDim: [188, 192, 204] },
+  green: { rose: [64, 160, 43], label: [76, 79, 105], value: [64, 160, 43], logoFresh: [64, 160, 43], logoDim: [188, 192, 204] },
+};
 
 const TEXT_LOGO = [
   "                  ▄▄▄▀▀▀▀▀██                                ▄▄▀▄▄          ▄▄█▀▀▀██   ▄▄▀██               ▄▄▀▄▄   ▄▄▀▄▄",
@@ -119,8 +126,8 @@ export async function writeBannerConfig(config: BannerConfig, configHome = gentl
   await writeFile(path, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
-function paletteColor(color: BannerColor, key: keyof typeof BANNER_PALETTES[BannerColor], text: string): string {
-  const [r, g, b] = BANNER_PALETTES[color][key];
+function paletteColor(palette: typeof BANNER_PALETTES[BannerColor], key: keyof typeof BANNER_PALETTES[BannerColor], text: string): string {
+  const [r, g, b] = palette[key];
   return rgb(r, g, b, text);
 }
 
@@ -664,7 +671,6 @@ export default function (pi: ExtensionAPI) {
     // Pi has already started its renderer. Let setHeader schedule the paint;
     // clearing stdout here would leave its previous-frame cache out of sync.
     const bannerConfig = await readBannerConfig();
-    const palette = BANNER_PALETTES[bannerConfig.color];
     const roseBase = padLines(normalizeAscii(ROSE_LARGE_RAW));
     const logoBase = padLines(TEXT_LOGO);
     void warmupLetterStrokes();
@@ -804,7 +810,9 @@ export default function (pi: ExtensionAPI) {
           /** Renders the persistent header grid; memoized per width, tick, mode and stats so static passes reuse the built lines. */
           render(width: number): string[] {
             if (state.mode === "skip") return [];
-            const headerKey = `${width}|${tick}|${state.mode}|${gitBranch}|${mcpServersCount}|${extensionsCount}|${packagesCount}|${backgroundAgentsCount}|${ctx.cwd}|${skills.length}|${customTools.length}`;
+            const light = (ctx.ui.theme ?? theme).appearance === "light";
+            const palette = (light ? LIGHT_BANNER_PALETTES : BANNER_PALETTES)[bannerConfig.color];
+            const headerKey = `${width}|${tick}|${state.mode}|${light}|${gitBranch}|${mcpServersCount}|${extensionsCount}|${packagesCount}|${backgroundAgentsCount}|${ctx.cwd}|${skills.length}|${customTools.length}`;
             if (headerCache?.key === headerKey) return headerCache.out;
 
             const flashStartTick = 10;
@@ -1026,6 +1034,11 @@ export default function (pi: ExtensionAPI) {
                 }
 
                 if (cell.type === "rose") {
+                  if (light) {
+                    if (roseOpacity > 0) line += paletteColor(palette, "rose", cell.char);
+                    else line += " ";
+                    continue;
+                  }
                   const pulse = 0.9 + Math.sin((x + y + frame) * 0.08) * 0.1;
                   const k = Math.max(0.01, roseOpacity * pulse);
                   const f = flashPhase ** 0.4;
@@ -1056,36 +1069,36 @@ export default function (pi: ExtensionAPI) {
                     y === sparkleY &&
                     (x === logoLastX || x === logoLastX - 1);
 
-                  if (sparkleOnCell) {
+                  if (sparkleOnCell && !light) {
                     line += `\x1b[1m` + rgb(255, 255, 255, "✦") + `\x1b[22m`;
                     continue;
                   }
 
-                  if (glintOnCell) {
+                  if (glintOnCell && !light) {
                     line += `\x1b[1m` + rgb(255, 245, 252, cell.char) + `\x1b[22m`;
                     continue;
                   }
 
-                  if (cell.type === "logo-tip") {
+                  if (cell.type === "logo-tip" && !light) {
                     line += `\x1b[1m` + rgb(255, 205, 238, cell.char) + `\x1b[22m`;
                   } else if (cell.type === "logo-fresh") {
                     line += cell.char === "▒"
-                      ? paletteColor(bannerConfig.color, "logoDim", cell.char)
-                      : paletteColor(bannerConfig.color, "logoFresh", cell.char);
+                      ? paletteColor(palette, "logoDim", cell.char)
+                      : paletteColor(palette, "logoFresh", cell.char);
                   } else {
                     line += cell.char === "▒"
-                      ? paletteColor(bannerConfig.color, "logoDim", cell.char)
-                      : paletteColor(bannerConfig.color, "value", cell.char);
+                      ? paletteColor(palette, "logoDim", cell.char)
+                      : paletteColor(palette, "value", cell.char);
                   }
                   continue;
                 }
 
                 switch (cell.type) {
                   case "label":
-                    line += paletteColor(bannerConfig.color, "label", cell.char);
+                    line += paletteColor(palette, "label", cell.char);
                     break;
                   case "value":
-                    line += paletteColor(bannerConfig.color, "value", cell.char);
+                    line += paletteColor(palette, "value", cell.char);
                     break;
                   case "dim":
                     line += theme.fg("dim", cell.char);
