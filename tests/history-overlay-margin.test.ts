@@ -34,8 +34,8 @@ const OWNING = {
   railColumns: SIDEBAR_RAIL_COLUMNS,
 };
 
-test("the published rail reservation pins the gentle-shell rail geometry (RAIL_WIDTH 50 + GAP 3)", () => {
-  assert.equal(SIDEBAR_RAIL_COLUMNS, 53);
+test("the published rail reservation pins the gentle-shell rail geometry (RAIL_WIDTH 40 + GAP 3)", () => {
+  assert.equal(SIDEBAR_RAIL_COLUMNS, 43);
 });
 
 test("padding constant pins the user-directed 1-column breathing room", () => {
@@ -95,7 +95,7 @@ test("returns 0 unless the sidebar publishes a positive integer rail reservation
 });
 
 test("returns the rail reservation plus padding only while the sidebar owns the host", () => {
-  assert.equal(editorOverlayMargin(terminalWithState(OWNING)), 54);
+  assert.equal(editorOverlayMargin(terminalWithState(OWNING)), 44);
   assert.equal(
     editorOverlayMargin(terminalWithState({ ...OWNING, railColumns: 40 })),
     41,
@@ -263,7 +263,7 @@ test("the picker keeps the native full-window overlay without a painting sidebar
 test("the picker margin stays live while the overlay is open", async () => {
   const state = { ...OWNING };
   const options = await captureOverlayOptions(terminalWithState(state));
-  assert.deepEqual(options.margin, { right: 54 });
+  assert.deepEqual(options.margin, { right: 44 });
   // Resizing below the breakpoint: pi-tui calls visible() on every render
   // pass, then re-reads margin while resolving the layout.
   state.active = false;
@@ -271,7 +271,7 @@ test("the picker margin stays live while the overlay is open", async () => {
   assert.equal(options.margin, undefined);
   state.active = true;
   assert.equal(options.visible?.(140, 50), true);
-  assert.deepEqual(options.margin, { right: 54 });
+  assert.deepEqual(options.margin, { right: 44 });
 });
 
 // Review advisory A4 (#1480): the live margin must follow the REAL installed
@@ -315,11 +315,11 @@ test("the open picker's margin follows the real sidebar across the breakpoint an
 test("the margin getter reports the value refreshed by the last visible() pass", async () => {
   const state = { ...OWNING };
   const options = await captureOverlayOptions(terminalWithState(state));
-  assert.deepEqual(options.margin, { right: 54 });
+  assert.deepEqual(options.margin, { right: 44 });
   // pi-tui re-reads margin several times per layout; between visible()
   // passes every read agrees, and the next pass picks up the change.
   state.active = false;
-  assert.deepEqual(options.margin, { right: 54 });
+  assert.deepEqual(options.margin, { right: 44 });
   assert.equal(options.visible?.(139, 50), true);
   assert.equal(options.margin, undefined);
   assert.equal(options.margin, undefined);

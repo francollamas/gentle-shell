@@ -6,7 +6,7 @@ import { renderSidebarBanner } from "./shell-sidebar-banner.ts";
 import type { Density, HeaderPlacement, StatusPlacement } from "./visual-customization-policy.ts";
 
 export const SIDEBAR_BREAKPOINT = 130;
-const RAIL_WIDTH = 50;
+const RAIL_WIDTH = 40;
 const RAIL_PADDING = 1;
 // The rail's ScrollView keeps one column for its scrollbar; with the rail
 // padding that puts the card's right border two columns in from the edge.
