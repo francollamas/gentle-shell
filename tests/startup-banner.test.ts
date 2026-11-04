@@ -122,15 +122,24 @@ test("startup banner keeps animating after invalidate and cleans up on dispose",
 	let shutdown: Function;
 	let header: { render(width: number): string[]; invalidate(): void; dispose(): void };
 	let renders = 0;
+	const activeTheme = { appearance: "dark", fg: (_role: string, text: string) => text };
 	startup({ on: (name: string, fn: Function) => {
 		if (name === "session_start") start = fn;
 		if (name === "session_shutdown") shutdown = fn;
 	}, registerCommand() {}, getCommands: () => [], getAllTools: () => [] } as unknown as ExtensionAPI);
-	await start!({}, { hasUI: true, cwd: "/fixture", ui: { setHeader: (factory: Function) => {
-		header = factory({ requestRender() { renders++; } }, { fg: (_role: string, text: string) => text });
+	await start!({}, { hasUI: true, cwd: "/fixture", ui: { theme: activeTheme, setHeader: (factory: Function) => {
+		header = factory({ requestRender() { renders++; } }, activeTheme);
 	} } });
 	t.mock.timers.tick(50);
 	assert.match(header!.render(200).join("\n"), /\x1b\[38;2;49;50;68m▒/, "script shadow uses Catppuccin Mocha surface0");
+	activeTheme.appearance = "light";
+	const light = header!.render(200).join("\n");
+	assert.match(light, /\x1b\[38;2;136;57;239m/, "light banner uses Latte mauve");
+	assert.match(light, /\x1b\[38;2;76;79;105m/, "light labels use Latte text");
+	assert.match(light, /\x1b\[38;2;188;192;204m▒/, "light shadow uses Latte surface1");
+	assert.doesNotMatch(light, /\x1b\[38;2;203;166;247m/, "light banner does not reuse Mocha mauve");
+	activeTheme.appearance = "dark";
+	assert.match(header!.render(200).join("\n"), /\x1b\[38;2;49;50;68m▒/, "switching back restores the dark palette");
 	const afterBoot = renders;
 	t.mock.timers.tick(25);
 	assert.ok(renders > afterBoot, "animation timer requests renders");
