@@ -144,7 +144,7 @@ The selector is always 30 rows tall. Its header adapts to the width:
   does not fit, the inactive scope is shortened
   (`◉ Current project | ○ All`).
 
-In fullscreen, when the Gentle sidebar is showing (140 columns or wider,
+In fullscreen, when the Gentle sidebar is showing (130 columns or wider,
 Status placement `auto` or `right`), the selector stays in the editor column,
 one column short of the sidebar gap, instead of covering the sidebar. The
 sidebar publishes its width through the terminal-owned sidebar state

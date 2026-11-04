@@ -38,7 +38,7 @@ Gentle Shell is the Pi workspace experience provided by the `gentle-pi` package.
 
 ### Fullscreen layout
 
-At 140 columns or wider, fullscreen defaults to a live header over a transcript-and-rail split, both driven by [`lib/shell-sidebar-layout.ts`](../lib/shell-sidebar-layout.ts):
+At 130 columns or wider, fullscreen defaults to a live header over a transcript-and-rail split, both driven by [`lib/shell-sidebar-layout.ts`](../lib/shell-sidebar-layout.ts):
 
 ```text
 ✿ Gentle Shell ⟡ ~/work/gentle-pi main ⟡ gpt-5.5 · medium · team              ctx ▰▰▰▰▱▱▱▱ 45% ⟡ $9.49 sub
@@ -50,7 +50,7 @@ At 140 columns or wider, fullscreen defaults to a live header over a transcript-
 - Gentle Agents follows TODO: while the fullscreen rail is showing, the Agents card moves into it and lists every shown task; without the rail (narrow fullscreen or regular mode) it stays above the editor. Its card has fixed right-aligned columns for `model · effort`, tokens, cost, and elapsed, each sized to the widest value among the shown tasks — so the numbers line up vertically even when one row's values are much shorter than another's. A queued task fills only the elapsed column with the word `queued`, leaving the other columns blank rather than overwriting the row.
 - The sidebar reuses its last frame until something it paints changes, so silent frames stay cheap; a per-section cache means one card's changing digest (or the header's) never forces an unrelated card to redraw.
 - Header placement is configurable. Above input, the float header has a full-width background, painted padding above and below its content, and a transparent `▔` bottom edge. Below input, the float footer groups Changes (when the session's roots have uncommitted work), header data, and locally owned integration statuses under one upper edge; it never duplicates statuses owned by the rail.
-- Below 140 columns, fullscreen has no sidebar. A configured top header owns the narrow status surface; otherwise the bottom bar owns it, unless Status is hidden. The Agents and TODO cards then return above the editor. Regular mode keeps the compact one-line bottom bar and the above-editor Agents widget, without a fullscreen header or sidebar.
+- Below 130 columns, fullscreen has no sidebar. A configured top header owns the narrow status surface; otherwise the bottom bar owns it, unless Status is hidden. The Agents and TODO cards then return above the editor. Regular mode keeps the compact one-line bottom bar and the above-editor Agents widget, without a fullscreen header or sidebar.
 
 The regular-mode compact bar replaces pi's three-line footer with a single line of segments:
 
@@ -308,7 +308,7 @@ until curl -sf localhost:3000/health; do sleep 1; done     # server is up
 - While the orchestrator has background work running (a subagent task or a background job), a `bash` call that only sleeps (`sleep 10`, `sleep 2m`, or several such sleeps joined by `&&`/`;`) is refused with a message to end the turn, because each completion already arrives as its own message. Wait conditions such as `until ...; do sleep 1; done`, sleeps mixed with real commands, `bash_background`, and `monitor` are never refused, and `sleep` is unrestricted when nothing runs in the background.
 - Jobs live in memory, belong to the session that started them, and are stopped when the session shuts down. At most 25 run at once.
 - `monitor` is a background job whose every output line is an event, delivered while the command keeps running — for example `tail -f app.log | grep --line-buffered ERROR`, or a loop that prints each CI check as it finishes. Lines within 200 ms share one notice of at most 20 lines (the rest are counted, and stay in the log); notices waiting for a busy agent coalesce. `timeout_seconds` is mandatory (1–1800): the monitor is stopped when it expires and reports its event count. One that prints more than 120 lines within 60 seconds is stopped as a flood, so filter its output. When the command exits, a final notice reports the exit code and event count. It goes through the same command guards as `bash`.
-- `/gentle:jobs` opens a full-terminal overlay with this session's jobs beside the selected job's command, status, output file, and live output tail; `↑`/`↓` or `j`/`k` move, `s` stops the selected running job, `q` closes (narrow terminals: `Tab` toggles details, `Escape` goes back). The footer shows `⧗ N jobs` while any run. In fullscreen at 140 columns or wider, running jobs also get their own collapsible sidebar card (`⧗ Jobs`), one row per job with its elapsed time, newest first; it paints nothing only while nothing is current — no running jobs and no finished result still inside its 60-second tail, the Status card never repeats it, and `ctrl+shift+j` (or clicking the card's header) collapses it; `GENTLE_PI_JOBS_KEY` remaps the shortcut, with an empty value or `off` disabling it.
+- `/gentle:jobs` opens a full-terminal overlay with this session's jobs beside the selected job's command, status, output file, and live output tail; `↑`/`↓` or `j`/`k` move, `s` stops the selected running job, `q` closes (narrow terminals: `Tab` toggles details, `Escape` goes back). The footer shows `⧗ N jobs` while any run. In fullscreen at 130 columns or wider, running jobs also get their own collapsible sidebar card (`⧗ Jobs`), one row per job with its elapsed time, newest first; it paints nothing only while nothing is current — no running jobs and no finished result still inside its 60-second tail, the Status card never repeats it, and `ctrl+shift+j` (or clicking the card's header) collapses it; `GENTLE_PI_JOBS_KEY` remaps the shortcut, with an empty value or `off` disabling it.
 
 ### Gentle Todo
 
@@ -410,4 +410,3 @@ This is **TUI-only suppression**: the generated user-role message remains in ses
 The Gentle AI harness (ODD workflow, identity, review contract) and the open-tasks block are appended to `before_agent_start`'s `systemPromptOptions.appendSystemPrompt` instead of being returned as a replacement `systemPrompt` (gentle-shell#1485). Provider bridges such as `pi-claude-bridge` forward only those structured sections after their own preset and drop a returned `systemPrompt`, so this route reaches every provider, bridged or not.
 
 Set `GENTLE_PI_SHELL=0` to keep pi's built-in footer and editor.
-

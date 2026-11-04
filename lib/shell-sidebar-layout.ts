@@ -5,7 +5,7 @@ import { CARD_STYLE, cardStyle, type CardStyle } from "./shell-card.ts";
 import { renderSidebarBanner } from "./shell-sidebar-banner.ts";
 import type { Density, HeaderPlacement, StatusPlacement } from "./visual-customization-policy.ts";
 
-export const SIDEBAR_BREAKPOINT = 140;
+export const SIDEBAR_BREAKPOINT = 130;
 const RAIL_WIDTH = 50;
 const RAIL_PADDING = 1;
 // The rail's ScrollView keeps one column for its scrollbar; with the rail

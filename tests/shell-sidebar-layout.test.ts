@@ -78,13 +78,13 @@ test("installation on a missing-terminal host is a harmless no-op", () => {
 	assert.doesNotThrow(dispose);
 });
 
-test("only fullscreen at 140 columns activates; shrinking restores bottom paint", (t) => {
-	for (const [mode, width, active] of [["regular", 140, false], ["fullscreen", 139, false], ["fullscreen", 140, true]] as const) {
+test("only fullscreen at 130 columns activates; shrinking restores bottom paint", (t) => {
+	for (const [mode, width, active] of [["regular", 130, false], ["fullscreen", 129, false], ["fullscreen", 130, true], ["fullscreen", 131, true]] as const) {
 		const f = fixture(mode, width);
 		t.after(installSidebar(f.tui, theme));
 		assert.equal(f.root[NODE]().type, active ? "hstack" : "vstack");
 		assert.deepEqual(f.bottom.render(80), active ? [] : ["Status"]);
-		f.host.terminal.columns = 139;
+		f.host.terminal.columns = 129;
 		assert.equal(f.root[NODE]().type, "vstack");
 		assert.deepEqual(f.bottom.render(80), ["Status"]);
 	}
@@ -103,7 +103,7 @@ test("bottom paint follows placement and resize before the next layout pass", (t
 	assert.equal(f.root[NODE]().type, "vstack");
 	placement = "right";
 	assert.equal(f.root[NODE]().type, "hstack");
-	f.host.terminal.columns = 139;
+	f.host.terminal.columns = 129;
 	assert.deepEqual(f.bottom.render(80), ["Status"]);
 	assert.equal(f.root[NODE]().type, "vstack");
 	placement = "hidden";
@@ -125,7 +125,7 @@ test("hidden status suppresses bottom paint and placement resizes responsively",
 	assert.deepEqual(f.bottom.render(80), []);
 	placement = "right";
 	assert.equal(f.root[NODE]().type, "hstack");
-	f.host.terminal.columns = 139;
+	f.host.terminal.columns = 129;
 	assert.equal(f.root[NODE]().type, "vstack");
 	placement = "bottom";
 	f.host.terminal.columns = 180;
@@ -134,12 +134,12 @@ test("hidden status suppresses bottom paint and placement resizes responsively",
 
 test("narrow status owner prefers a configured top header, otherwise the bottom bar, and leaves wide/regular untouched", () => {
 	for (const statusPlacement of ["auto", "right", "bottom", "hidden"] as const) {
-		for (const columns of [40, 100, 139]) {
+		for (const columns of [40, 100, 129]) {
 			assert.equal(narrowStatusOwner({ mode: "fullscreen", columns, statusPlacement, headerPlacement: "top" }), "header", `${columns}/${statusPlacement}/top`);
 			assert.equal(narrowStatusOwner({ mode: "fullscreen", columns, statusPlacement, headerPlacement: "below-input" }), statusPlacement === "hidden" ? "header" : "bottom", `${columns}/${statusPlacement}/below-input`);
 		}
 		for (const headerPlacement of ["top", "below-input"] as const) {
-			assert.equal(narrowStatusOwner({ mode: "fullscreen", columns: 140, statusPlacement, headerPlacement }), undefined, "wide keeps its layout");
+			assert.equal(narrowStatusOwner({ mode: "fullscreen", columns: 130, statusPlacement, headerPlacement }), undefined, "wide keeps its layout");
 			assert.equal(narrowStatusOwner({ mode: "regular", columns: 60, statusPlacement, headerPlacement }), undefined, "regular mode has no top header");
 		}
 	}
@@ -210,7 +210,7 @@ test("hidden status suppresses bottom paint in regular, narrow and wide fullscre
 		for (const other of ["auto", "right", "bottom"] as const) {
 			placement = other;
 			f.root[NODE]();
-			const railOwns = mode === "fullscreen" && width >= 140 && other !== "bottom";
+			const railOwns = mode === "fullscreen" && width >= 130 && other !== "bottom";
 			assert.deepEqual(f.bottom.render(width), railOwns ? [] : ["Status"], `${mode}/${width}/${other}`);
 		}
 		placement = "hidden";
@@ -254,7 +254,7 @@ test("hidden status reclaims the reserved footer row in narrow and wide fullscre
 			assert.doesNotMatch(lines.join("\n"), /Status/);
 			placement = "bottom";
 			lines = f.frame();
-			if (withHeader && width < 140) {
+			if (withHeader && width < 130) {
 				// The narrow top header owns Status, so its reserved row is reclaimed too.
 				assert.match(lines[lines.length - 1] ?? "", /Editor/, `${width} narrow top header leaves no blank footer row`);
 				assert.doesNotMatch(lines.join("\n"), /Status/);
@@ -335,7 +335,7 @@ test("wheel scrolls the rail and is consumed at both boundaries and blank space"
 		assert.equal(scroll.scrollTop, expected);
 		assert.equal(result?.target?.component, scroll);
 	}
-	f.host.terminal.columns = 139;
+	f.host.terminal.columns = 129;
 	assert.equal(f.root[NODE]().type, "vstack");
 	assert.deepEqual(f.bottom.render(80), ["Status"]);
 	f.host.terminal.columns = 160;
@@ -433,7 +433,7 @@ test("rail dispatches a clipped, scroll-translated left click to only the matchi
 	assert.equal(scroll.handleMouse({ ...mouse("click", "left", headerY), x: 49 }), undefined, "padding outside the clipped part is inert");
 	invalidateSidebar(f.tui);
 	assert.equal(scroll.handleMouse(mouse("click", "left", headerY)), undefined, "stale geometry is inert");
-	f.host.terminal.columns = 139;
+	f.host.terminal.columns = 129;
 	assert.equal(scroll.handleMouse(mouse("click", "left", headerY)), undefined, "resized-away rails are inert");
 	dispose();
 	assert.equal(scroll.handleMouse(mouse("click", "left", headerY)), undefined, "disposed rails are inert");
@@ -513,8 +513,8 @@ test("real layout frames reuse unchanged sidebar output and invalidate at state 
 	assert.match(changed.lines.join("\n"), /Todo two/);
 	assert.deepEqual(counts, { footer: 2, changes: 0, agents: 2, todo: 2 });
 
-	f.host.terminal.columns = 139;
-	renderLayoutFrame(f.root, 139, 20, () => {});
+	f.host.terminal.columns = 129;
+	renderLayoutFrame(f.root, 129, 20, () => {});
 	assert.deepEqual(f.bottom.render(80), ["Status"]);
 	f.host.terminal.columns = 140;
 	renderLayoutFrame(f.root, 140, 20, () => {});
@@ -781,7 +781,7 @@ test("native fullscreen header survives narrow and bottom transitions without re
 		const { frame, transcriptRenders } = f.frame(width);
 		assert.equal(transcriptRenders, 1, "native transcript paints only once");
 		assert.equal(frame.primaryScrollView, f.primary);
-		assert.match(frame.lines[0] ?? "", new RegExp(`HEADER ${status === "right" && width >= 140 ? width - 2 : width}`));
+		assert.match(frame.lines[0] ?? "", new RegExp(`HEADER ${status === "right" && width >= 130 ? width - 2 : width}`));
 		assert.ok(frame.lines.some((line) => line.includes("Editor")), "native editor survives");
 		assert.equal(frame.root.children.some((box) => box.component instanceof ScrollView && box.component !== f.primary), false, "no extra root scroll view");
 	}
@@ -809,12 +809,12 @@ test("native transcript and sidebar keep separate scroll routing across resize, 
 	assert.equal(fixture.primary.scrollTop, transcriptTop - 7);
 	assert.equal(rail.scrollTop, 5);
 	assert.equal(result.transcriptRenders, 1);
-	for (const [mode, width] of [["fullscreen", 139], ["fullscreen", 140], ["regular", 180], ["fullscreen", 180]] as const) {
+	for (const [mode, width] of [["fullscreen", 129], ["fullscreen", 130], ["regular", 180], ["fullscreen", 180]] as const) {
 		fixture.host.mode = mode;
 		result = fixture.frame(width);
 		assert.equal(result.transcriptRenders, 1);
 		assert.equal(result.frame.primaryScrollView, fixture.primary);
-		assert.equal(result.frame.root.children.some(box => box.component === rail), mode === "fullscreen" && width >= 140);
+		assert.equal(result.frame.root.children.some(box => box.component === rail), mode === "fullscreen" && width >= 130);
 	}
 });
 
@@ -1023,14 +1023,14 @@ test("the header leaf carries the rule row: a two-line header renders both lines
 });
 
 test("below the sidebar breakpoint a rule-like header paints above native layout without a rail", (t) => {
-	const f = fixture("fullscreen", 139);
+	const f = fixture("fullscreen", 129);
 	sidebarHeader(f.tui, { render: (width: number) => [`HEADER ${width}`, `RULE ${width}`], invalidate() {} });
 	t.after(installSidebar(f.tui, theme));
 
 	const node = f.root[NODE]() as unknown as { type: string; entries: { component: Component }[] };
 	assert.equal(node.type, "vstack");
-	assert.deepEqual(node.entries[0]?.component.render(139), ["HEADER 139", "RULE 139"]);
-	assert.deepEqual(f.bottom.render(139), [], "the narrow top header is the only status row");
+	assert.deepEqual(node.entries[0]?.component.render(129), ["HEADER 129", "RULE 129"]);
+	assert.deepEqual(f.bottom.render(129), [], "the narrow top header is the only status row");
 });
 
 test("without a registered header the rail keeps the banner and the plain hstack", (t) => {

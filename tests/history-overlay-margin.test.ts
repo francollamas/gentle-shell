@@ -155,7 +155,7 @@ function sidebarHost(columns: number) {
 }
 
 test("the installed sidebar publishes its rail reservation; the margin tracks the breakpoint", (t) => {
-  const { host, tui, root } = sidebarHost(140);
+  const { host, tui, root } = sidebarHost(130);
   t.after(installSidebar(tui, shellTheme));
   assert.equal(sidebarState(tui).railColumns, SIDEBAR_RAIL_COLUMNS);
   root[NODE]();
@@ -164,7 +164,7 @@ test("the installed sidebar publishes its rail reservation; the margin tracks th
     SIDEBAR_RAIL_COLUMNS + SIDEBAR_OVERLAY_PADDING,
     "fullscreen at the breakpoint with a painting rail",
   );
-  host.terminal.columns = 139;
+  host.terminal.columns = 129;
   root[NODE]();
   assert.equal(editorOverlayMargin(host.terminal), 0, "below the breakpoint");
 });
@@ -277,7 +277,7 @@ test("the picker margin stays live while the overlay is open", async () => {
 // Review advisory A4 (#1480): the live margin must follow the REAL installed
 // sidebar after the overlay opened, not only a hand-built state object.
 test("the open picker's margin follows the real sidebar across the breakpoint and teardown", async (t) => {
-  const { host, tui, root } = sidebarHost(139);
+  const { host, tui, root } = sidebarHost(129);
   let uninstall = installSidebar(tui, shellTheme);
   t.after(() => uninstall());
   root[NODE]();
@@ -285,30 +285,30 @@ test("the open picker's margin follows the real sidebar across the breakpoint an
   assert.equal(options.margin, undefined, "opened below the breakpoint: no rail");
 
   // Widening across the breakpoint paints the rail while the picker is open.
-  host.terminal.columns = 140;
+  host.terminal.columns = 130;
   root[NODE]();
-  assert.equal(options.visible?.(140, 50), true);
+  assert.equal(options.visible?.(130, 50), true);
   assert.deepEqual(options.margin, {
     right: SIDEBAR_RAIL_COLUMNS + SIDEBAR_OVERLAY_PADDING,
   });
 
   // Narrowing below it removes the rail again.
-  host.terminal.columns = 139;
+  host.terminal.columns = 129;
   root[NODE]();
-  assert.equal(options.visible?.(139, 50), true);
+  assert.equal(options.visible?.(129, 50), true);
   assert.equal(options.margin, undefined);
 
   // Back at the breakpoint, then the sidebar is torn down: the rail
   // disappears and the picker returns to the full window.
-  host.terminal.columns = 140;
+  host.terminal.columns = 130;
   root[NODE]();
-  assert.equal(options.visible?.(140, 50), true);
+  assert.equal(options.visible?.(130, 50), true);
   assert.deepEqual(options.margin, {
     right: SIDEBAR_RAIL_COLUMNS + SIDEBAR_OVERLAY_PADDING,
   });
   uninstall();
   uninstall = () => {};
-  assert.equal(options.visible?.(140, 50), true);
+  assert.equal(options.visible?.(130, 50), true);
   assert.equal(options.margin, undefined);
 });
 
