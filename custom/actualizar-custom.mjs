@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { piConfig } from "./pi-config.mjs";
 
@@ -31,35 +30,10 @@ function compare(a, b) {
 	const x = version(a), y = version(b);
 	return y[0] - x[0] || y[1] - x[1] || y[2] - x[2];
 }
-function registerPi() {
-	const home = config.agentHome;
-	const settingsPath = join(home, "settings.json");
-	const settings = existsSync(settingsPath) ? JSON.parse(readFileSync(settingsPath, "utf8")) : {};
-	const packages = settings.packages ?? [];
-	if (!Array.isArray(packages)) throw new Error(`La lista de paquetes en ${settingsPath} no es válida.`);
-	let registered = false;
-	for (const entry of packages) {
-		const source = typeof entry === "string" ? entry : entry?.source;
-		if (typeof source !== "string") continue;
-		if (/^npm:gentle-pi(?:@|$)/.test(source)) throw new Error("Pi ya tiene npm:gentle-pi configurado. Revisa pi list y elimina esa entrada manualmente antes de continuar para evitar duplicados.");
-		if (/^(npm:|git:|https?:)/.test(source)) continue;
-		const path = isAbsolute(source) ? source : resolve(home, source);
-		if (!existsSync(join(path, "package.json"))) continue;
-		const metadata = JSON.parse(readFileSync(join(path, "package.json"), "utf8"));
-		if (metadata.name !== "gentle-pi") continue;
-		if (realpathSync(path) !== realpathSync(root)) throw new Error(`Pi ya tiene otro checkout de gentle-pi: ${path}. Revísalo antes de continuar.`);
-		registered = true;
-	}
-	if (!registered) run("pi", ["install", root]);
-}
-
 try {
 	if (process.argv.length !== 2) throw new Error("Uso: ./actualizar-custom.mjs (sin argumentos)");
 	console.log(`Directorio de Pi: ${config.agentHome}`);
 	if (git("branch", "--show-current") !== "custom") throw new Error("Debes estar en la rama custom.");
-	if (process.env.GENTLE_PI_SKIP_GENTLE_AI_INSTALL === "1") throw new Error("Desactiva GENTLE_PI_SKIP_GENTLE_AI_INSTALL antes de continuar.");
-	run("pi", ["--version"]);
-	run("pnpm", ["--version"]);
 	const [latest, recent] = await Promise.all([releases("/latest"), releases("?per_page=100")]);
 	if (latest.draft || latest.prerelease || !version(latest.tag_name) || !Array.isArray(recent)) throw new Error("GitHub no devolvió una release estable válida.");
 	run("git", ["fetch", "upstream", "--tags"]);
@@ -73,16 +47,15 @@ try {
 	if (!base) throw new Error("No se encontró una release estable oficial anterior en el historial; no se modificó la rama.");
 	console.log(`Base detectada: ${base}. Última release estable: ${target}.`);
 	if (base !== target) {
-		if (git("status", "--porcelain")) throw new Error("Hay cambios sin guardar. Haz commit o guarda tus cambios antes del rebase.");
-		if (!ancestor(`refs/tags/${base}`, `refs/tags/${target}`)) throw new Error("La base no es antecesora de la última release; rebase cancelado.");
-		run("git", ["rebase", "--onto", `refs/tags/${target}`, `refs/tags/${base}`, "custom"]);
-	} else console.log("La rama ya está basada en la última release estable.");
-	run("pnpm", ["install", "--frozen-lockfile"]);
-	run("node", ["scripts/install-gentle-ai.mjs"]);
-	registerPi();
-	console.log("Listo. Reinicia Pi o usa /reload. Si hubo rebase, revisa y publica con git push --force-with-lease origin custom.");
+		if (!ancestor(`refs/tags/${base}`, `refs/tags/${target}`)) throw new Error("La base no es antecesora de la última release; actualización detenida.");
+		if (!process.stdin.isTTY || !process.stdout.isTTY) throw new Error("Hay una nueva release, pero se necesita una terminal interactiva para abrir Pi.");
+		const prompt = `Hay una nueva release estable oficial de Gentle Shell: ${target}. La base detectada de esta rama custom es ${base}.
+Ayúdame interactivamente a actualizar mi fork a esa release, sin seguir upstream/main. Lee custom/INSTRUCCIONES-IA.md y las notas oficiales de la release. Comprueba el estado de Git, la identidad y ascendencia de ambos tags y mis commits personales. No descartes ni sobrescribas cambios; si hay trabajo sin guardar, detente y consulta cómo proceder.
+Propón un rebase explícito de mis commits posteriores a ${base} sobre ${target} (git rebase --onto refs/tags/${target} refs/tags/${base} custom) y pide mi confirmación antes de ejecutarlo. Resuelve conflictos conmigo y conserva mis personalizaciones. Después del rebase, comprueba cambios y pruebas, prepara las dependencias y el runtime del checkout si corresponde, y verifica que Pi siga usando este checkout local. No instales la versión npm de gentle-pi. No hagas push ni force push sin pedirme confirmación expresa. Si hay un bloqueo, explícalo y espera mis instrucciones.`;
+		console.log("Nueva release disponible. Abriendo Pi en modo interactivo; el script no hará el rebase.");
+		run("pi", ["--", prompt]);
+	} else console.log("La rama ya está basada en la última release estable. No hay nada que actualizar.");
 } catch (error) {
 	console.error(`actualizar-custom: ${error.message}`);
-	console.error("Si el rebase quedó en conflicto, resuélvelo con git rebase --continue o cancélalo con git rebase --abort; después vuelve a ejecutar este comando.");
 	process.exitCode = 1;
 }

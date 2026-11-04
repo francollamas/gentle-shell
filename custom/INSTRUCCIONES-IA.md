@@ -8,12 +8,12 @@ Estas instrucciones describen la configuración personal del usuario. No sustitu
 - Pi se instala por separado y carga la raíz de este checkout como paquete local `gentle-pi`; no se debe sustituir por `npm:gentle-pi`. Pi carga la rama activa y también cambios sin commit.
 - Por defecto los scripts usan `~/.config/pi/agent`, incluido `bin/pi` si existe, y propagan `PI_CODING_AGENT_DIR` a sus procesos hijos. Una variable `PI_CODING_AGENT_DIR` absoluta explícita tiene prioridad. Al iniciar Pi fuera de los scripts, esa variable también debe apuntar al mismo directorio: instalar el ejecutable allí no garantiza que Pi use esa configuración.
 - `custom/instalar-custom.mjs` prepara dependencias y runtime, registra el checkout, instala los complementos y crea `~/.local/bin/gentle-update`. Requiere Node, pnpm, Pi y Engram instalados. No modifica el historial de Git.
-- `custom/actualizar-custom.mjs` consulta la última release estable oficial, trae tags de `upstream`, hace rebase de `custom` si corresponde y prepara dependencias/runtime. El enlace `gentle-update` apunta a este archivo. No hace push ni actualiza los complementos de Pi.
-- Para aplicar cambios del checkout, reiniciar Pi o usar `/reload`; los cambios en dependencias pueden requerir `gentle-update`. Algunos cambios pueden requerir un reinicio completo o regenerar `runtime/` con `pnpm run build:runtime-modules`.
+- `custom/actualizar-custom.mjs` consulta la última release estable oficial y trae tags de `upstream`. Si hay una nueva release, abre Pi interactivamente para planificar y realizar la actualización con el usuario; el script no hace rebase, instala dependencias ni hace push. El enlace `gentle-update` apunta a este archivo.
+- Para aplicar cambios del checkout, reiniciar Pi o usar `/reload`; si cambian dependencias o el runtime, prepararlos con `pnpm install --frozen-lockfile` y `node scripts/install-gentle-ai.mjs`. Algunos cambios pueden requerir un reinicio completo o regenerar `runtime/` con `pnpm run build:runtime-modules`.
 
 ## Precauciones
 
-- No ejecutar un rebase con cambios sin guardar ni publicar con force push sin autorización. El script pide árbol limpio para el rebase; en caso de conflicto, resolver con `git rebase --continue` o cancelar con `git rebase --abort` y después ejecutar `gentle-update`.
+- No ejecutar un rebase con cambios sin guardar ni publicar con force push sin autorización. El agente debe verificar el árbol y pedir confirmación antes del rebase; en caso de conflicto, resolver con el usuario mediante `git rebase --continue` o `git rebase --abort`.
 - Los tags locales comparten espacio entre remotos: ante un conflicto de tags, no forzar su reemplazo sin investigar. El script identifica la base entre las últimas 100 releases oficiales; si no puede determinarla se detiene.
 - El checkout local es una ruta absoluta en la configuración de Pi y en el enlace simbólico. Si se mueve, actualizar ambos cuidadosamente; el instalador no sobrescribe un enlace existente a otro destino.
 - Complementos deseados: `pi-web-access`, `pi-btw` y `gentle-engram`. Engram usa herramientas nativas `mem_*`; no añadir otro MCP de Engram sin evaluar duplicación. El instalador conserva versiones existentes y evita ejecutar `pi-engram init` si detecta entradas duplicadas o sin versión.
@@ -24,7 +24,7 @@ Estas instrucciones describen la configuración personal del usuario. No sustitu
 
 ```sh
 ./custom/instalar-custom.mjs  # primera instalación o preparación
-gentle-update                 # nueva release y preparación local
+gentle-update                 # comprobar release; abrir Pi si hay una nueva
 pi list                       # comprobar paquetes registrados
 ```
 
