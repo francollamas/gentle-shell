@@ -2995,7 +2995,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 				{ setting: "Animations", value: policy, current: () => resolveAnimationPolicy(animationOptions).policy === policy, hint: "Prompt and startup motion; potato turns it off" },
 			);
 			category = "Banner";
-			const bannerColors = { pink: [255, 118, 195], cyan: [95, 210, 255], yellow: [255, 210, 95], green: [110, 220, 145] } as const;
+			const bannerColors = { pink: [203, 166, 247], cyan: [95, 210, 255], yellow: [255, 210, 95], green: [110, 220, 145] } as const;
 			const bannerPreview = (next: typeof banner) => {
 				const [r, g, b] = bannerColors[next.color];
 				return { title: `Banner · ${next.color} (static)`, sample: `${next.showRose ? `\x1b[38;2;${r};${g};${b}m🌹\x1b[0m` : "·"}  ${next.showTextLogo ? "GENTLE SHELL" : "(logo hidden)"}` };

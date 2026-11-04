@@ -22,7 +22,7 @@ export const DEFAULT_BANNER_CONFIG: BannerConfig = {
 };
 export const BANNER_COLORS: BannerColor[] = ["pink", "cyan", "yellow", "green"];
 const BANNER_PALETTES: Record<BannerColor, { rose: [number, number, number]; label: [number, number, number]; value: [number, number, number]; logoFresh: [number, number, number]; logoDim: [number, number, number] }> = {
-  pink: { rose: [255, 118, 195], label: [200, 100, 160], value: [255, 140, 210], logoFresh: [255, 138, 206], logoDim: [95, 30, 60] },
+  pink: { rose: [203, 166, 247], label: [180, 190, 254], value: [203, 166, 247], logoFresh: [203, 166, 247], logoDim: [49, 50, 68] },
   cyan: { rose: [95, 210, 255], label: [85, 170, 205], value: [130, 225, 255], logoFresh: [105, 220, 255], logoDim: [25, 80, 100] },
   yellow: { rose: [255, 210, 95], label: [210, 165, 65], value: [255, 225, 135], logoFresh: [255, 215, 105], logoDim: [105, 75, 25] },
   green: { rose: [110, 220, 145], label: [85, 175, 115], value: [145, 240, 170], logoFresh: [120, 230, 150], logoDim: [30, 95, 50] },
