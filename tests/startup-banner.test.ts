@@ -130,7 +130,7 @@ test("startup banner keeps animating after invalidate and cleans up on dispose",
 		header = factory({ requestRender() { renders++; } }, { fg: (_role: string, text: string) => text });
 	} } });
 	t.mock.timers.tick(50);
-	assert.match(header!.render(200).join("\n"), /\x1b\[38;2;95;30;60m▒/, "script shadow keeps the dark pink palette");
+	assert.match(header!.render(200).join("\n"), /\x1b\[38;2;49;50;68m▒/, "script shadow uses Catppuccin Mocha surface0");
 	const afterBoot = renders;
 	t.mock.timers.tick(25);
 	assert.ok(renders > afterBoot, "animation timer requests renders");
