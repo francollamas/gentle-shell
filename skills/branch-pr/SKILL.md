@@ -1,6 +1,6 @@
 ---
 name: gentle-ai-branch-pr
-description: "Create Gentle AI pull requests with issue-first checks. Trigger: creating, opening, or preparing PRs for review."
+description: "Prepare and create pull requests using the target repository's conventions. Trigger: creating, opening, or preparing PRs for review."
 license: Apache-2.0
 metadata:
   author: gentleman-programming
@@ -18,33 +18,33 @@ Use this skill when:
 
 ## Critical Rules
 
-1. **Every PR MUST link an approved issue** — no exceptions
-2. **Every PR MUST have exactly one `type:*` label**
-3. **REQUIRED CI must pass according to target policy** before merge; CodeRabbit is optional unless required by that policy
-4. **Blank PRs without issue linkage will be blocked** by GitHub Actions
+1. Follow the target repository's actual contribution requirements; do not impose Gentle-specific policy on other repositories.
+2. An issue is optional unless the destination requires one or the user requests one. Link an existing relevant issue when appropriate; never create one solely to enable a PR unless required by destination policy or requested by the user.
+3. Use labels only when the repository uses or requires them, or the user requests them.
+4. **REQUIRED CI must pass according to target policy** before merge; CodeRabbit is optional unless required by that policy.
 
 ---
 
 ## Target and Authorization
 
 - Inspect `origin` locally (`git remote get-url origin`) and establish one unambiguous target host and `owner/repo`. Do not infer the target from the cwd or assume `main`. Stop if ambiguous.
-- Obtain explicit remote destination, operation and credential/session authorization before any target-host reads, including `gh auth status` or repository metadata. Do not inspect or reuse an ambient SSH agent. Permission for a read does not authorize a write; confirm each remote operation is within the grant.
-- Once authorized, reuse fresh target-bound issue, default branch, type labels and checks evidence from this session instead of repeating discovery. Refresh stale or mismatched evidence; do not substitute another host's data. Resolve the base from the authorized target's default branch or a human-selected base.
-- Do not automatically commit, push, open a PR or merge. Prepare and report a candidate; perform each action only with its own authorization. Local preparation is not permission for remote delivery.
+- A clear request to work on a branch or create a PR authorizes the necessary target-host reads and the operations reasonably needed for that requested outcome, including creating a branch, committing and pushing when needed to create the requested PR. Use the configured credential/session without a separate permission prompt; do not switch identities or targets implicitly. Ask when the destination, identity, or intended action is materially ambiguous.
+- Reuse fresh target-bound evidence, including the default branch, applicable labels, checks and any relevant issue, instead of repeating discovery. Refresh stale or mismatched evidence; do not substitute another host's data. Resolve the base from the target's default branch or a human-selected base.
+- A request to prepare a candidate does not by itself authorize publishing it. Creating a PR does not authorize merging, destructive operations, or unrelated changes; ask before those actions.
 
 ## Workflow
 
-1. Identify the authorized target and verify that the linked issue is approved; choose with the human whether the reference closes it or is nonclosing.
-2. Select the base from target metadata and prepare a `type/description` branch only when requested.
-3. Implement in work units with conventional commits when authorized; follow the merged ODD applicable test-first policy, run applicable tests, shellcheck on modified scripts, and test changed skills in at least one agent when relevant. The per-task advisory 400 authored-line heuristic is not an automatic split or a reason to omit tests or docs.
-4. Prepare the PR body from the target template and evidence. On separate authorization, open the PR and add exactly one `type:*` label.
+1. Identify the target and its contribution requirements. Link a relevant issue when appropriate or required; respect the user's choice of closing or nonclosing reference.
+2. Select the base from target metadata and follow the repository's branch convention, or use `type/description` as a nonblocking default when none exists.
+3. Implement in work units using the repository's commit convention, or conventional commits as a nonblocking default when none exists; follow the merged ODD applicable test-first policy, run applicable tests, shellcheck on modified scripts, and test changed skills in at least one agent when relevant. The per-task advisory 400 authored-line heuristic is not an automatic split or a reason to omit tests or docs.
+4. Prepare the PR body from the target template if present, otherwise use a concise summary and test plan. Open the PR when requested and apply labels only as appropriate to the target.
 5. Check target-policy required CI and report pending/failing checks rather than declaring merge-ready.
 
 ---
 
 ## Branch Naming
 
-Branch names MUST match this regex:
+When the repository has no branch naming convention, this is a suggested default, not a requirement:
 
 ```
 ^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)\/[a-z0-9._-]+$
@@ -70,15 +70,15 @@ Branch names MUST match this regex:
 
 ## PR Body Format
 
-Use the authorized target's `.github/PULL_REQUEST_TEMPLATE.md`. Fill it from observed evidence, retaining its required sections.
+Use the target's PR template when present, filling it from observed evidence and retaining its required sections. Otherwise use a concise description and test plan; the following sections are suggestions, not universal requirements.
 
-### 1. Linked Issue (REQUIRED)
+### 1. Linked Issue (when applicable)
 
-Use the human-selected closing (`Closes #N`, `Fixes #N`, or `Resolves #N`) or nonclosing `Refs #N` reference. Do not turn `Refs` into an automatic close. The linked issue MUST have the `status:approved` label; reuse fresh target-bound verification.
+Use a closing (`Closes #N`, `Fixes #N`, or `Resolves #N`) or nonclosing `Refs #N` reference as appropriate to the user's intent and target policy. Do not turn `Refs` into an automatic close.
 
-### 2. PR Type (REQUIRED)
+### 2. PR Type (when applicable)
 
-Check exactly ONE in the template and add the matching label:
+If the target template or policy uses these types, select the appropriate one and apply a matching label only when relevant:
 
 | Checkbox | Label to add |
 |----------|-------------|
@@ -107,22 +107,22 @@ Record actual commands and outcomes, including shellcheck on modified scripts, m
 
 ### 6. Contributor Checklist
 
-Do not mark an unverified `[x]` checkbox. Check each item only after evidence supports it; leave pending items unchecked, including approved issue, exactly one `type:*` label, applicable shellcheck, skills tested in at least one agent, docs updated if behavior changed, conventional commit format, and no `Co-Authored-By` trailers. If a template demands every box checked, resolve outstanding items before submission rather than falsely attesting.
+Do not mark an unverified `[x]` checkbox. Check template items only after evidence supports them; leave pending items unchecked. If a template demands every box checked, resolve outstanding items before submission rather than falsely attesting.
 
 ---
 
 ## Labels and Automated Checks
 
-- Apply exactly one `type:*` label from the authorized target's available labels. A commit-type mapping below is a suggestion, not proof of label availability or permission.
+- Follow the target's label policy; do not require a `type:*` label if the target does not use or require one. A commit-type mapping below is a suggestion, not proof of label availability or permission.
 - Protected labels require an exact direct instruction naming the label and an actor with MAINTAIN/ADMIN permission. Do not infer authorization from a general request to prepare or open a PR.
 - For a PR above the advisory 400 authored-line review budget, follow the destination repository's documented contribution/size policy. `size:exception` is a Gentle-owned repository policy, not a universal label requirement. Never request, create, or add the label for generic users unless their destination policy uses it. Only when that policy uses `size:exception`, record the human-selected `size:exception` rationale if that route was selected; no separate instructor proof is required. Preserve actual policy acceptance gates and apply the protected label only under the same direct-instruction and actor rule. Choosing `single-pr` does not waive policy gates or label authorization, nor automatically select `exception-ok`. Do not code-golf or omit tests to meet the budget.
-- REQUIRED CI is determined by target policy, not a fixed list of job names. Check issue-reference validation (including target-supported `Refs`), issue approval, exactly one type label and shellcheck where the target requires them. CodeRabbit is optional unless required by target policy. Report required pending or failing checks; never merge on an unverified green claim.
+- REQUIRED CI is determined by target policy, not a fixed list of job names. Check issue-reference validation (including target-supported `Refs`), labels and shellcheck where the target requires them. CodeRabbit is optional unless required by target policy. Report required pending or failing checks; never merge on an unverified green claim.
 
 ---
 
 ## Conventional Commits
 
-Commit messages MUST match this regex:
+Follow the repository's commit message convention. When none exists, this format is a suggested default, not a requirement:
 
 ```
 ^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9\._-]+\))?!?: .+
@@ -171,4 +171,4 @@ feat!: redesign skill loading system
 
 ## Commands
 
-Local target inspection may use `git remote get-url origin`. After explicit target-host read authorization, verify target metadata and the default branch with target-bound `gh` calls; never use implicit cwd targeting. Run applicable local checks before proposing delivery. Only with separate authorization for the verified destination, operation and credential/session may you push, create or edit a PR. Pass the verified `--repo` and `--base` explicitly, and use the human-selected issue-reference form in the body. Do not execute a command block as an automatic workflow.
+Local target inspection may use `git remote get-url origin`. Verify target metadata and the default branch with target-bound `gh` calls. Run applicable local checks before delivery. A clear request to create a PR authorizes the necessary branch, commit, push and PR creation operations, but not merge or destructive operations. Pass the verified `--repo` and `--base` explicitly, and use an issue reference only when applicable. Do not execute a command block as an automatic workflow.
