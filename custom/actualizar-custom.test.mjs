@@ -44,6 +44,10 @@ test("nueva release abre Pi interactivo sin hacer rebase ni instalar", t => {
 	assert.equal(result.status, 0, result.stderr);
 	assert.match(calls, /pi -- Hay una nueva release estable oficial/);
 	assert.match(calls, /pide mi confirmación antes de ejecutarlo/);
+	assert.match(calls, /custom\/PERSONALIZACIONES\.md/);
+	assert.match(calls, /Aunque el rebase no tenga conflictos/);
+	assert.match(calls, /custom-base exactamente a v4\.6\.0/);
+	assert.match(calls, /--force-with-lease solo con autorización expresa/);
 	assert.doesNotMatch(calls, /^git rebase /m);
 	assert.doesNotMatch(calls, /^(pnpm|npm) /m);
 });
