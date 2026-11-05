@@ -1,8 +1,8 @@
 import { Container, ScrollView, VStack, visibleWidth, type Component, type TUI, type TuiMouseEvent } from "@earendil-works/pi-tui";
 import { setSidebarHover, sidebarState, type SidebarRail } from "./shell-sidebar.ts";
 import type { ShellBarTheme } from "./shell-bar.ts";
-import { CARD_STYLE, cardStyle, paintSurfaceRow, surfaceOpener, type CardStyle } from "./shell-card.ts";
-import { PANEL_SURFACE_ROLE } from "./shell-panel.ts";
+import { CARD_STYLE, cardStyle, paintSurfaceRow, type CardStyle } from "./shell-card.ts";
+import { panelSurfaceOpener } from "./shell-panel.ts";
 import { renderSidebarBanner } from "./shell-sidebar-banner.ts";
 import type { Density, HeaderPlacement, StatusPlacement } from "./visual-customization-policy.ts";
 
@@ -87,7 +87,7 @@ function railDigest(rail: SidebarRail): string | undefined {
 const THEME_SIGNATURE_ROLES = ["accent", "border", "borderAccent", "muted", "dim", "text", "success", "warning", "error"];
 function themeSignature(theme: ShellBarTheme): string {
 	try {
-		return THEME_SIGNATURE_ROLES.map((role) => theme.fg(role, "·")).join("") + theme.bold("·");
+		return THEME_SIGNATURE_ROLES.map((role) => theme.fg(role, "·")).join("") + theme.bold("·") + panelSurfaceOpener(theme);
 	} catch {
 		return "";
 	}
@@ -288,7 +288,12 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme, placement: () => 
 			// the terminal width (minus the rail's right inset), never the
 			// 50-column rail's content width.
 			const headerPart = state.parts.get("header");
-			const preparedHeaderLines = [...(headerPart?.render(Math.max(0, width - HEADER_RIGHT_INSET)) ?? [])];
+			const extendChrome = (rows: string[]) => {
+				const open = panelSurfaceOpener(theme);
+				return rows.map((row) => open && row.startsWith(open) && visibleWidth(row) === width - HEADER_RIGHT_INSET
+					? row + paintSurfaceRow(" ".repeat(HEADER_RIGHT_INSET), open) : row);
+			};
+			const preparedHeaderLines = extendChrome([...(headerPart?.render(Math.max(0, width - HEADER_RIGHT_INSET)) ?? [])]);
 			const headerActive = headerPart !== undefined && preparedHeaderLines.some((line) => line.trim() !== "");
 			const contentWidth = scroll.getContentWidth(RAIL_WIDTH);
 			// Live work first, then the session Status sections (design/shell-rework/02-proposal.html).
@@ -318,7 +323,7 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme, placement: () => 
 			const hits: RailHit[] = [];
 			railLines = [];
 			fillRow = "";
-			const surface = surfaceOpener(theme, PANEL_SURFACE_ROLE);
+			const surface = panelSurfaceOpener(theme);
 			if (sections.length && branding.length) {
 				railLines.push(...branding.map((line) => " ".repeat(RAIL_PADDING) + line + " ".repeat(RAIL_PADDING)));
 			} else if (sections.length && headerActive && (headerPlacement() === "top" || (density() === "comfortable" && style === CARD_STYLE.NEON))) {
@@ -345,7 +350,7 @@ export function installSidebar(tui: TUI, theme: ShellBarTheme, placement: () => 
 			const active = railLines.length > 0 && railLines.every((line) => visibleWidth(line) <= contentWidth);
 			headerLines = headerActive && headerPlacement() === "top" ? preparedHeaderLines : [];
 			const statusPart = state.parts.get("statusbar");
-			const preparedStatusLines = active && statusPart ? [...(statusPart.render(Math.max(0, width - HEADER_RIGHT_INSET)) ?? [])] : [];
+			const preparedStatusLines = active && statusPart ? extendChrome([...(statusPart.render(Math.max(0, width - HEADER_RIGHT_INSET)) ?? [])]) : [];
 			statusLines = preparedStatusLines.some((line) => line.trim() !== "") ? preparedStatusLines : [];
 			prepared = { revision: cache.revision, width, mode: host.mode, headerPlacement: headerPlacement(), cardStyle: style, root, theme, themeSignature: signature, parts, digests, contentWidth, active, lines: railLines, hits, headerLines, statusLines, fillRow, headerActive: headerLines.length > 0 };
 			state.active = active;

@@ -2333,7 +2333,7 @@ test("autocomplete floats above the editor, hides on close and is disposed", () 
 		const rows = editor.render(80);
 		assert.ok(rows.every(row => !row.includes("completion")));
 		const overlayRows = component?.render(80) ?? [];
-		assert.deepEqual(overlayRows.map(line => line.replace(/<\/?toolSuccessBg>/g, "").trim()), ["completion one", "completion two", ""]);
+		assert.deepEqual(overlayRows.map(line => line.replace(/<\/?toolSuccessBg>/g, "").trim()), ["completion one", "completion two"]);
 		assert.ok(overlayRows.every(line => line.startsWith("<toolSuccessBg>") && line.endsWith("</toolSuccessBg>")));
 		assert.equal(options?.anchor, "bottom-left");
 		assert.equal(options?.nonCapturing, true);
@@ -3718,7 +3718,7 @@ test("T3 live style Cards action refreshes cached TODO and Status in both direct
 	// The wide chrome: the title row on top and one status bar row as the last layout entry.
 	const wide = root[node]() as unknown as { entries: { component: { render(width: number): string[] } }[] };
 	assert.equal(wide.entries.length, 3, "title row, transcript with the rail, status bar");
-	assert.match(stripAnsi(frame.header), /^ ✿ repo  \/repo .*team $/);
+	assert.match(stripAnsi(frame.header), /^ ✿ repo  \/repo .*team {3}$/);
 	assert.match(stripAnsi(wide.entries[2]!.component.render(160).join("\n")), /^ main .*ctx .*usage/);
 	const neon = { ...frame };
 	paint();

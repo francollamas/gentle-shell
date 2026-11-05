@@ -6,27 +6,21 @@ En cada actualización comparar los tags oficiales y el diff de `custom` contra 
 
 ## Instalación y actualización del fork
 
-- **Intención:** usar el checkout local como paquete de Pi, con directorio de agente configurable; preparar dependencias, runtime y complementos sin sustituirlo por `npm:gentle-pi`. `gentle-update` detecta releases estables y delega la actualización interactiva a Pi, sin modificar por sí mismo el historial ni publicar.
-- **Superficies:** `custom/instalar-custom.mjs`, `custom/pi-config.mjs`, `custom/actualizar-custom.mjs` y `custom/INSTRUCCIONES-IA.md`. Preservar los complementos y precauciones allí documentados, especialmente los datos de Engram.
+- **Intención:** usar el checkout local como paquete de Pi, con directorio de agente configurable; preparar dependencias, runtime y complementos sin sustituirlo por `npm:gentle-pi`. Al terminar una instalación interactiva, abrir Pi para investigar paquetes adicionales y consultar antes de instalarlos; sin terminal interactiva, avisar que se omitió la revisión. `gentle-update` detecta releases estables y delega la actualización interactiva a Pi, sin modificar por sí mismo el historial ni publicar.
+- **Superficies:** `custom/instalar-custom.mjs`, `custom/installer-followup.mjs`, `custom/pi-config.mjs`, `custom/actualizar-custom.mjs` y `custom/INSTRUCCIONES-IA.md`. Preservar los complementos y precauciones allí documentados, especialmente los datos de Engram.
 - **Comprobación:** `node --test custom/*.test.mjs`; revisar registro de paquete y directorio de Pi, y validar el flujo interactivo y la instalación cuando sea posible. La instalación completa en una máquina limpia no está validada.
 
 ## Temas y banner Catppuccin
 
-- **Intención:** ofrecer Mocha, Macchiato, Frappé y Latte con contraste legible; Latte usa un fondo neutro para éxito. El banner adapta su paleta a temas claros y oscuros, con rosa estilo Mocha y vista previa coherente.
-- **Superficies:** `themes/catppuccin-*.json`, licencias en `themes/`, `extensions/startup-banner.ts` y vista previa en `extensions/gentle-shell.ts`.
+- **Intención:** ofrecer Mocha y Latte con contraste legible; Latte usa un fondo neutro para éxito. El banner adapta su paleta a temas claros y oscuros, con rosa estilo Mocha y vista previa coherente.
+- **Superficies:** `themes/catppuccin-*.json`, licencias en `themes/`, `extensions/startup-banner.ts`, vista previa en `extensions/gentle-shell.ts` y chrome en `lib/shell-panel.ts`, `lib/shell-bar.ts` y `lib/shell-sidebar-layout.ts`. La barra y el panel usan `toolPendingBg` para Latte y Mocha sin cambiar ese rol para otros componentes; el fondo de las barras alcanza el borde derecho sin desplazar el contenido.
 - **Comprobación:** `tests/startup-banner.test.ts` y pruebas visuales manuales con temas claros/oscuros, incluyendo éxito y vista previa; las pruebas automáticas no sustituyen la evaluación del contraste.
 
-## Sidebar y presentación del estado
+## Autocompletado
 
-- **Intención:** mostrar el sidebar desde 130 columnas, con rail de 40 columnas; conservar el comportamiento apropiado debajo del umbral. Ocultar la pista del atajo de uso sin eliminar la funcionalidad correspondiente.
-- **Superficies:** `lib/shell-sidebar-layout.ts`, `extensions/gentle-shell.ts`, `docs/gentle-shell.md`.
-- **Comprobación:** `tests/shell-sidebar-layout.test.ts`, `tests/gentle-shell.test.ts` y revisión manual alrededor del umbral, en pantalla completa y estrecha.
-
-## Autocompletado y presentación de modos
-
-- **Intención:** presentar el menú nativo de autocompletado como overlay sin capturar su entrada; ocultarlo al cambiar de diálogo o destruir el editor, con fallback nativo si el host no soporta overlays. No mostrar indicadores redundantes YOLO/SUPER YOLO; esto no debe alterar permisos ni protecciones.
-- **Superficies:** `lib/autocomplete-overlay.ts`, su licencia en `lib/PI-AUTOCOMPLETE-LICENSE.txt`, `lib/shell-prompt.ts`, `extensions/gentle-shell.ts`, `lib/yolo-session-policy.ts` y documentación de historial.
-- **Comprobación:** `tests/autocomplete-overlay.test.ts`, `tests/gentle-shell.test.ts`, `tests/history-overlay-margin.test.ts`, `tests/yolo-mode.test.ts`, `tests/yolo-mode-runtime.test.ts` y `tests/yolo-customize.test.ts`; comprobar manualmente teclado, diálogos, fallback y modos. No confundir ocultar una etiqueta con desactivar una protección.
+- **Intención:** presentar el menú nativo de autocompletado como overlay sin capturar su entrada; ocultarlo al cambiar de diálogo o destruir el editor, con fallback nativo si el host no soporta overlays.
+- **Superficies:** `lib/autocomplete-overlay.ts`, su licencia en `lib/PI-AUTOCOMPLETE-LICENSE.txt`, `lib/shell-prompt.ts` y `extensions/gentle-shell.ts`.
+- **Comprobación:** `tests/autocomplete-overlay.test.ts`, `tests/gentle-shell.test.ts` y `tests/history-overlay-margin.test.ts`; comprobar manualmente teclado, diálogos y fallback. El sidebar, la pista de usage y los indicadores de permisos siguen el comportamiento oficial.
 
 ## Flujos de colaboración
 

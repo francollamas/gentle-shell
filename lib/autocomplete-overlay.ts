@@ -10,7 +10,7 @@ export class AutocompleteOverlay {
 	private left?: number;
 	private inset = 0;
 	private readonly component: Component = {
-		render: (width) => [...this.lines, ""].map((line) => {
+		render: (width) => this.lines.map((line) => {
 			const clipped = truncateToWidth(" ".repeat(this.inset) + line, width, "");
 			const padded = clipped + " ".repeat(Math.max(0, width - visibleWidth(clipped)));
 			const marker = this.background("");

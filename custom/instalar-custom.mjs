@@ -6,6 +6,7 @@ import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { piConfig } from "./pi-config.mjs";
+import { installationFollowup } from "./installer-followup.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const config = piConfig();
@@ -82,6 +83,12 @@ try {
 	}
 	console.log("Instalación preparada. Reinicia Pi y comprueba la memoria. Ejecuta gentle-update para actualizar el checkout.");
 	if (!process.env.PATH?.split(":").includes(dirname(link))) console.warn(`Añade ${dirname(link)} a PATH para usar gentle-update.`);
+	if (process.stdin.isTTY && process.stdout.isTTY) {
+		console.log("Abriendo Pi para revisar posibles paquetes adicionales.");
+		run("pi", installationFollowup());
+	} else {
+		console.warn("No hay terminal interactiva: se omite la revisión de paquetes adicionales con Pi.");
+	}
 } catch (error) {
 	console.error(`instalar-custom: ${error.message}`);
 	process.exitCode = 1;
