@@ -34,3 +34,6 @@ tmp/
 
 # CodeGraph index (recreated by pi on session start)
 .codegraph/
+
+# Local work/task artifacts (untracked sessions)
+odd/work/

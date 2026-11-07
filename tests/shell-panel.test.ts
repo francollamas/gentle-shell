@@ -45,6 +45,15 @@ test("the panel surface paints the rail role behind the row and re-arms it after
 	assert.deepEqual(paintPanelSurface(plain, ["row"]), ["row"], "a theme without bg keeps rows unpainted");
 });
 
+test("Catppuccin chrome uses the softer pending background without changing other themes", () => {
+	for (const [name, expected] of [["catppuccin-latte", "toolPendingBg"], ["catppuccin-mocha", "toolPendingBg"], ["other", "customMessageBg"]]) {
+		const themed = { ...plain, name, bg: (role: string, text: string) => `[${role}]${text}\x1b[49m` };
+		assert.ok(paintPanelSurface(themed, ["rail"])[0]!.startsWith(`[${expected}]`));
+		assert.ok(renderShellTitleRow(chromeModel, themed, 90).startsWith(`[${expected}]`));
+		assert.ok(renderShellStatusBar(chromeModel, themed, 120).rows[0]!.startsWith(`[${expected}]`));
+	}
+});
+
 const state = (tasks: Array<[string, string, string?]>): TodoState => ({
 	tasks: tasks.map(([title, status, note], index) => ({ id: index + 1, title, status: status as never, ...(note ? { note } : {}) })),
 	nextId: tasks.length + 1,

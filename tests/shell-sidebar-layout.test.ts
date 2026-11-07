@@ -1262,6 +1262,31 @@ test("a status bar part paints one full-width row below the transcript and the r
 	assert.equal(widthSeen, 160 - 2, "rendered at the header's width");
 });
 
+test("wide chrome paints the right inset without moving content or clicks and refreshes background switches", (t) => {
+	const f = fixture("fullscreen", 160);
+	let color = 22;
+	const live = { ...theme, bg: (_role: string, text: string) => `\x1b[48;5;${color}m${text}\x1b[49m` };
+	const widths: number[] = [];
+	const received: TuiMouseEvent[] = [];
+	const part = { render: (width: number) => { widths.push(width); return [live.bg("customMessageBg", "X".padEnd(width))]; }, invalidate() {}, handleMouse: (event: TuiMouseEvent) => { received.push(event); return { handled: true }; } };
+	sidebarHeader(f.tui, part);
+	sidebarStatusBar(f.tui, part);
+	t.after(installSidebar(f.tui, live));
+	const node = f.root[NODE]() as unknown as { entries: { component: Component }[] };
+	for (const component of [node.entries[0]!.component, node.entries[2]!.component]) {
+		const row = component.render(160)[0]!;
+		assert.equal(visibleWidth(row), 160);
+		assert.ok(row.endsWith(`\x1b[48;5;22m  \x1b[49m`));
+		const event = { type: "click", button: "left", x: 5, y: 0, screenX: 5, screenY: 0, width: 160, height: 1, shift: false, alt: false, ctrl: false } as TuiMouseEvent;
+		component.handleMouse!(event);
+		assert.equal(received.at(-1), event);
+	}
+	assert.deepEqual(widths, [158, 158]);
+	color = 23;
+	const changed = f.root[NODE]() as unknown as { entries: { component: Component }[] };
+	assert.ok(changed.entries[0]!.component.render(160)[0]!.includes("\x1b[48;5;23m"));
+});
+
 test("below the rail breakpoint the status bar row stays only while its part paints one (mobile)", (t) => {
 	const f = fixture("fullscreen", 139);
 	let paints = true;

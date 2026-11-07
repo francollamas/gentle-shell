@@ -8,6 +8,12 @@ import { paintHoverable } from "./shell-hover.ts";
 
 /** The theme background the rail panel paints behind its sections. */
 export const PANEL_SURFACE_ROLE = "customMessageBg";
+
+/** The Catppuccin chrome uses a quieter surface without changing other theme roles. */
+export function panelSurfaceOpener(theme: CardTheme): string {
+	const name = (theme as CardTheme & { name?: string }).name;
+	return surfaceOpener(theme, name === "catppuccin-latte" || name === "catppuccin-mocha" ? "toolPendingBg" : PANEL_SURFACE_ROLE);
+}
 /** Columns a panel row is indented under its header. */
 export const PANEL_ROW_INDENT = 2;
 
@@ -67,7 +73,7 @@ export function renderPanelRow(width: number, left: string, right = "", indent =
 
 /** Paints every row behind the rail surface; a theme that cannot paint it leaves rows as they are. */
 export function paintPanelSurface(theme: CardTheme, rows: readonly string[]): string[] {
-	const open = surfaceOpener(theme, PANEL_SURFACE_ROLE);
+	const open = panelSurfaceOpener(theme);
 	return rows.map((row) => paintSurfaceRow(row, open));
 }
 

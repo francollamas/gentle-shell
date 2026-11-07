@@ -15,9 +15,9 @@ Discover the target repository's contribution workflow before proposing or publi
 
 ## Safe Discovery
 
-Before any `gh auth status` or target read, require explicit human authorization for the remote destination (exact host and repository), operation (including discovery and intended issue creation), and credential/session to use. A local checkout is not authorization. If any is missing or ambiguous, stop locally; never probe credentials or sessions to resolve ambiguity. Run the checks below only with the authorized credential/session against the authorized destination; if `gh auth status` would inspect other credentials/sessions, do not run it. Verify the discovered `REPO`, `HOST`, and `TARGET` match the authorized destination before continuing; never switch identities or targets implicitly.
+A clear request to create or triage an issue authorizes the target reads and operations needed for that request, using the configured credential/session. Identify the host and repository from the request or an unambiguous local remote; verify `REPO`, `HOST`, and `TARGET` before publication. Ask when the destination, identity, or intended action is materially ambiguous; never switch identities or targets implicitly. A request to draft an issue alone does not authorize publication, and publication does not authorize unrelated actions.
 
-After that gate, run read-only checks:
+Run the relevant read-only checks against the identified target:
 
 ```bash
 gh auth status
@@ -50,7 +50,7 @@ LABEL_ARGS+=(--label "$LABEL") # Repeat only for each permitted discovered label
    gh issue list --repo "$TARGET" --state all --search "$QUERY" --limit 1000
    ```
 
-   The agent must complete the duplicate search proactively and retain evidence of its result. If results are saturated or completeness is uncertain, narrow the read-only search or stop. Comment on a confirmed duplicate instead of creating one. Before commenting on a confirmed duplicate, perform the same privacy scan/redaction on the exact comment body as for publication.
+   The agent must complete the duplicate search proactively and retain evidence of its result. If results are saturated or completeness is uncertain, narrow the read-only search or stop. Report a confirmed duplicate instead of creating another issue; comment only if the user's request includes that action. Before commenting on a confirmed duplicate, perform the same privacy scan/redaction on the exact comment body as for publication.
 2. Select one repository-provided form only when its declared purpose matches. If multiple forms match and policy does not distinguish them, stop and request that decision.
 3. For a YAML form, read its schema and establish controls in declared order. Support only `input`, `textarea`, `dropdown`, and `checkboxes`. Markdown controls are non-answer guidance: honor their visible instructions when collecting and materializing adjacent answers, but do not render them as response sections. Fail closed before mutation on malformed, unsupported, missing, or ambiguous required structure or answers. A malformed schema, or missing or ambiguous required answers, fail closed: do not open a browser or mutate. A browser handoff is available only when the user explicitly requests browser completion or a syntactically valid selected form cannot safely/faithfully be represented by the automated path; otherwise report why automation is unsafe and stop.
 

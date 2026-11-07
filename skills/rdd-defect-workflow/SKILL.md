@@ -16,8 +16,8 @@ This skill guides public collaboration. It does not grant issue approval, label,
 ## Hard Rules
 
 - Review and Judgment Day evidence is review-only. Pi never mints delivery authority: ordinary commit, push, PR, and release always follow repository policy, regardless of RDD mode.
-- Require an approved issue (`status:approved`) and clean current `main` reproduction before implementation. Audit existing PRs for supersession or conflict; stop or narrow stale claims.
-- Group by causal authority invariant. Use one issue and one PR or explicit chain per independent invariant and rollback boundary. Split independent causes; never merge a superseded or conflicting authority line.
+- Do not require an issue before implementation unless repository policy or the user requires one; use an existing relevant issue when appropriate and do not create one solely to enable a PR unless required by policy or requested. Reproduce on the current integration base before implementation. Audit existing PRs for supersession or conflict; stop or narrow stale claims.
+- Group by causal authority invariant. Use one PR or explicit chain per independent invariant and rollback boundary, with issues only when relevant or required. Split independent causes; never merge a superseded or conflicting authority line.
 - Inventory every operator flow claimed by the issue or PR, including entry, mode, environment, expectation, and negative controls. Require one truthful black-box bench journey per CLI or lifecycle flow, or actual runtime E2E proof when the core bench cannot represent it. Synthetic proxy coverage never proves another runtime.
 - Use CodeGraph-first impact mapping, a dedicated worktree, and behavior-first tests. Run source-mutating normalization before candidate freeze.
 - Forecast authored changes before edits. The hard limit is 400 additions plus deletions; above it, STOP for a chain or explicit maintainer-approved exception.
@@ -30,14 +30,14 @@ This skill guides public collaboration. It does not grant issue approval, label,
 | Condition | Action |
 | --- | --- |
 | Any RDD mode | Review evidence remains review-only; ordinary commit, push, PR, and release follow repository policy with no Pi delivery authority. |
-| Issue gate or reproduction fails | Wait, stop, or narrow with evidence. |
+| Applicable repository issue requirement or reproduction fails | Wait, stop, or narrow with evidence. |
 | Invariant or rollback is independent | Separate issue and authoritative PR line. |
 | Core bench fits / does not fit | Bench journey / actual runtime E2E; never proxy. |
 | Forecast exceeds 400 lines | Chain or approved exception before edits. |
 
 ## Execution Steps
 
-1. Check mode, approval, PR conflicts, and current-main reproduction.
+1. Check mode, applicable repository requirements, PR conflicts, and reproduction on the current integration base.
 2. Name invariant and rollback; isolate the worktree; CodeGraph-map code, tests, evidence, docs, distribution, and registration.
 3. Inventory flows and controls; add failing tests and the smallest correction.
 4. Normalize, enforce budget, run tests, and record each flow's exact candidate, command, scenario, and result.
@@ -45,9 +45,9 @@ This skill guides public collaboration. It does not grant issue approval, label,
 
 ## Output Contract
 
-Return `rdd_mode`, `issue_pr`, `causal_invariant`, `operator_flows`, `journey_runtime_evidence`, `changed_line_budget`, `tests`, `rollback`, and `unresolved_authority_decisions`.
+Return `rdd_mode`, `issue_pr` (issue if any, and PR if any), `causal_invariant`, `operator_flows`, `journey_runtime_evidence`, `changed_line_budget`, `tests`, `rollback`, and `unresolved_authority_decisions`.
 
-Identify approved and superseded/conflicting authority lines; every flow, negative control, and candidate-bound proof; additions plus deletions and chain/exception; test results; independent rollback; and unresolved maintainer decisions.
+Identify relevant and superseded/conflicting authority lines; every flow, negative control, and candidate-bound proof; additions plus deletions and chain/exception; test results; independent rollback; and unresolved maintainer decisions.
 
 ## References
 

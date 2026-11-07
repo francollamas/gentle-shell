@@ -2312,6 +2312,48 @@ test("a duplicate marker introduced after Vim enable exits NORMAL with a visible
 	} finally { editor.dispose(); }
 });
 
+test("autocomplete floats above the editor, hides on close and is disposed", () => {
+	let component: { render(width: number): string[] } | undefined;
+	let hidden = false;
+	let removed = 0;
+	let options: { nonCapturing?: boolean; anchor?: string; margin?: { bottom?: number }; visible?: () => boolean } | undefined;
+	const tui = { ...fakeTui, showOverlay(value: typeof component, opts: typeof options) {
+		component = value; options = opts;
+		return { setHidden(value: boolean) { hidden = value; }, hide() { removed++; } };
+	} };
+	const editor = new GentlePromptEditor(tui as never, editorTheme as never, fakeKeybindings as never, {
+		fg: (_color, text) => text, bg: (color, text) => `<${color}>${text}</${color}>`, bold: (text) => text, requestRender() {},
+		pending: () => false, now: () => 0, doubleEscCancelEnabled: () => false, dispatchQueuedText() {},
+	});
+	const internal = editor as unknown as { autocompleteState: string | null; autocompleteList: { render(width: number): string[] } };
+	internal.autocompleteState = "force";
+	internal.autocompleteList = { render: () => ["completion one", "completion two"] };
+	editor.focused = true;
+	try {
+		const rows = editor.render(80);
+		assert.ok(rows.every(row => !row.includes("completion")));
+		const overlayRows = component?.render(80) ?? [];
+		assert.deepEqual(overlayRows.map(line => line.replace(/<\/?toolSuccessBg>/g, "").trim()), ["completion one", "completion two"]);
+		assert.ok(overlayRows.every(line => line.startsWith("<toolSuccessBg>") && line.endsWith("</toolSuccessBg>")));
+		assert.equal(options?.anchor, "bottom-left");
+		assert.equal(options?.nonCapturing, true);
+		assert.equal(options?.margin?.bottom, rows.length + 1);
+		assert.equal(options?.visible?.(), true);
+		editor.focused = false;
+		assert.equal(options?.visible?.(), false);
+		editor.focused = true;
+		// A shortcut can replace the editor synchronously without a new render.
+		editor.onExtensionShortcut = () => { assert.equal(hidden, true); return true; };
+		editor.handleInput("x");
+		editor.render(80);
+		assert.equal(hidden, false);
+		internal.autocompleteState = null;
+		editor.render(80);
+		assert.equal(hidden, true);
+	} finally { editor.dispose(); }
+	assert.equal(removed, 1);
+});
+
 test("GentlePromptEditor autocomplete respects narrow frame widths", () => {
  const { pi, handlers } = fakePi();
  gentleShell(pi, {});
@@ -3676,7 +3718,7 @@ test("T3 live style Cards action refreshes cached TODO and Status in both direct
 	// The wide chrome: the title row on top and one status bar row as the last layout entry.
 	const wide = root[node]() as unknown as { entries: { component: { render(width: number): string[] } }[] };
 	assert.equal(wide.entries.length, 3, "title row, transcript with the rail, status bar");
-	assert.match(stripAnsi(frame.header), /^ ✿ repo  \/repo .*team $/);
+	assert.match(stripAnsi(frame.header), /^ ✿ repo  \/repo .*team {3}$/);
 	assert.match(stripAnsi(wide.entries[2]!.component.render(160).join("\n")), /^ main .*ctx .*usage/);
 	const neon = { ...frame };
 	paint();

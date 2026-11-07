@@ -1,6 +1,7 @@
 import { sharedCooldown, syncUsageCooldown } from "../lib/model-fallback-policy.ts";
 import { CustomEditor, keyHint, type ExtensionAPI, type ExtensionContext, type KeybindingsManager } from "@earendil-works/pi-coding-agent";
 import { isHomeOrBroadUserDirectory } from "../lib/bounded-writer-admission.ts";
+import { AutocompleteOverlay } from "../lib/autocomplete-overlay.ts";
 import { Editor, Image, Key, decodeKittyPrintable, getCapabilities, isKeyRelease, matchesKey, parseKey, truncateToWidth, visibleWidth, type Component, type EditorTheme, type TUI, type TuiMouseEvent } from "@earendil-works/pi-tui";
 import { readClipboardImage, type ClipboardImage } from "../lib/clipboard-image.ts";
 import { readPastedImagePaths } from "../lib/pasted-image-paths.ts";
@@ -585,6 +586,7 @@ export class GentlePromptEditor extends CustomEditor {
 	private lastRenderAt = 0;
 	private readonly deps: PromptEditorDeps;
 	private readonly pointerTui: TUI;
+	private readonly autocompleteOverlay: AutocompleteOverlay;
 	private floatMouseLayout?: ReturnType<typeof resolvePromptLayout>;
 	private topRowCount = 0;
 	private hoveredTopRow: number | undefined;
@@ -617,6 +619,7 @@ export class GentlePromptEditor extends CustomEditor {
 
 	constructor(tui: TUI, theme: EditorTheme, keybindings: KeybindingsManager, deps: PromptEditorDeps) {
 		super(tui, theme, keybindings);
+		this.autocompleteOverlay = new AutocompleteOverlay(tui, () => this.focused, (text) => deps.bg?.("toolSuccessBg", text) ?? text);
 		this.selectionEngine = new SelectionEngine(this);
 		this.deps = deps;
 		this.pointerTui = tui;
@@ -854,6 +857,11 @@ export class GentlePromptEditor extends CustomEditor {
 	 * and never reach this branch.
 	 */
 	override handleInput(data: string): void {
+		// A key can synchronously replace the editor with a Pi dialog (for
+		// example Enter on /settings), so render() may never run to hide the
+		// old overlay. Hide before dispatch; the next editor render restores it
+		// if native autocomplete is still active.
+		this.autocompleteOverlay.hide();
 		// Selection and Vim handlers can consume input before the native chain;
 		// any intervening key invalidates an idle Esc confirmation.
 		if (this.pendingIdleClearDeadline !== undefined && !this.keybindingsManager.matches(data, "app.interrupt")) {
@@ -1446,7 +1454,13 @@ export class GentlePromptEditor extends CustomEditor {
 		framed.unshift(...topRows);
 		// Pi places autocomplete after its bottom border. Keep those rows below
 		// Gentle's frame and preserve their terminal width and row coordinates.
-		for (const line of editorLines.slice(borderEnd)) {
+		const menuLines = editorLines.slice(borderEnd);
+		const internal = this as unknown as { autocompleteState?: unknown };
+		const overlayLeft = layout.background ? 1 : 0;
+		const overlayWidth = Math.max(1, width - (layout.background ? 2 : 0));
+		const overlayShown = !!internal.autocompleteState && menuLines.length > 0 && this.autocompleteOverlay.show(menuLines, framed.length, overlayWidth, overlayLeft, layout.prefixWidth - overlayLeft);
+		if (!overlayShown) this.autocompleteOverlay.hide();
+		for (const line of overlayShown ? [] : menuLines) {
 			if (layout.panel) {
 				framed.push(panelPromptRow(line, layout, " ".repeat(layout.prefixWidth)));
 				continue;
@@ -1474,6 +1488,7 @@ export class GentlePromptEditor extends CustomEditor {
 	dispose(): void {
 		this.disposed = true;
 		this.clearEditorHover();
+		this.autocompleteOverlay.dispose();
 		this.stopWatchdog();
 	}
 
@@ -2995,7 +3010,7 @@ export default function gentleShell(pi: ExtensionAPI, env: NodeJS.ProcessEnv = p
 				{ setting: "Animations", value: policy, current: () => resolveAnimationPolicy(animationOptions).policy === policy, hint: "Prompt and startup motion; potato turns it off" },
 			);
 			category = "Banner";
-			const bannerColors = { pink: [255, 118, 195], cyan: [95, 210, 255], yellow: [255, 210, 95], green: [110, 220, 145] } as const;
+			const bannerColors = { pink: [203, 166, 247], cyan: [95, 210, 255], yellow: [255, 210, 95], green: [110, 220, 145] } as const;
 			const bannerPreview = (next: typeof banner) => {
 				const [r, g, b] = bannerColors[next.color];
 				return { title: `Banner · ${next.color} (static)`, sample: `${next.showRose ? `\x1b[38;2;${r};${g};${b}m🌹\x1b[0m` : "·"}  ${next.showTextLogo ? "GENTLE SHELL" : "(logo hidden)"}` };
