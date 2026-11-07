@@ -1,12 +1,12 @@
 # Intención de las personalizaciones
 
-Este inventario describe comportamientos deseados, no una garantía de compatibilidad. Base inicial: `v4.5.1`. La implementación puede cambiar con upstream: conservar la intención, no necesariamente las líneas actuales. Ante dudas o cambios incompatibles, consultar al usuario. Actualizar este documento y las pruebas al añadir, cambiar o retirar una personalización.
+Este inventario describe comportamientos deseados, no una garantía de compatibilidad. Base inicial: `v4.5.1`; base actual: rama `release` (apunta a `v4.6.0`). La implementación puede cambiar con upstream: conservar la intención, no necesariamente las líneas actuales. Ante dudas o cambios incompatibles, consultar al usuario. Actualizar este documento y las pruebas al añadir, cambiar o retirar una personalización.
 
 En cada actualización comparar los tags oficiales y el diff de `custom` contra el nuevo tag; revisar cada apartado incluso si Git no reporta conflictos. Ejecutar las pruebas pertinentes, comprobar manualmente los comportamientos visuales cuando corresponda y comunicar qué quedó sin verificar. Un test aislado no demuestra que Pi funcione de extremo a extremo.
 
 ## Instalación y actualización del fork
 
-- **Intención:** usar el checkout local como paquete de Pi, con directorio de agente configurable; preparar dependencias, runtime y complementos sin sustituirlo por `npm:gentle-pi`. Al terminar una instalación interactiva, abrir Pi para investigar paquetes adicionales y consultar antes de instalarlos; sin terminal interactiva, avisar que se omitió la revisión. `gentle-update` detecta releases estables y delega la actualización interactiva a Pi, sin modificar por sí mismo el historial ni publicar.
+- **Intención:** usar el checkout local como paquete de Pi, con directorio de agente configurable; preparar dependencias, runtime y complementos sin sustituirlo por `npm:gentle-pi`. Al terminar una instalación interactiva, abrir Pi para investigar paquetes adicionales y consultar antes de instalarlos; sin terminal interactiva, avisar que se omitió la revisión. `gentle-update` detecta releases estables y delega la actualización interactiva a Pi, sin modificar por sí mismo el historial ni publicar. La base se toma de la rama `release` (siempre un tag estable oficial), no de un tag inferido del historial: así el rebase `--onto` sigue la intención declarada en lugar de un merge explícito.
 - **Superficies:** `custom/instalar-custom.mjs`, `custom/installer-followup.mjs`, `custom/pi-config.mjs`, `custom/actualizar-custom.mjs` y `custom/INSTRUCCIONES-IA.md`. Preservar los complementos y precauciones allí documentados, especialmente los datos de Engram.
 - **Comprobación:** `node --test custom/*.test.mjs`; revisar registro de paquete y directorio de Pi, y validar el flujo interactivo y la instalación cuando sea posible. La instalación completa en una máquina limpia no está validada.
 
