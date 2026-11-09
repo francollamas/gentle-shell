@@ -2,7 +2,7 @@
 
 Este inventario describe comportamientos deseados, no una garantía de compatibilidad. Base inicial: `v4.5.1`; base actual: rama `release` (apunta a `v4.7.0`). La implementación puede cambiar con upstream: conservar la intención, no necesariamente las líneas actuales. Ante dudas o cambios incompatibles, consultar al usuario. Actualizar este documento y las pruebas al añadir, cambiar o retirar una personalización.
 
-En cada actualización comparar los tags oficiales y el diff de `custom` contra el nuevo tag; revisar cada apartado incluso si Git no reporta conflictos. Ejecutar las pruebas pertinentes, comprobar manualmente los comportamientos visuales cuando corresponda y comunicar qué quedó sin verificar. Un test aislado no demuestra que Pi funcione de extremo a extremo.
+En cada actualización comparar los tags oficiales y el diff de la rama archivada (`custom-v<TAG-VIEJO>-archive`) contra el nuevo tag: como `custom` se reconstruye en lugar de rebasearse, Git nunca reporta conflictos y la revisión de cada apartado es manual y obligatoria. Ejecutar las pruebas pertinentes, comprobar manualmente los comportamientos visuales cuando corresponda y comunicar qué quedó sin verificar. Un test aislado no demuestra que Pi funcione de extremo a extremo.
 
 ## Instalación y actualización del fork
 

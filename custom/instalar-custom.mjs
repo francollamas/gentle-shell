@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// First-time setup for the personal checkout; never rebases or modifies Engram data.
+// First-time setup for the personal checkout; never rewrites branch history or modifies Engram data.
 import { spawnSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, realpathSync, symlinkSync } from "node:fs";
 import { homedir } from "node:os";

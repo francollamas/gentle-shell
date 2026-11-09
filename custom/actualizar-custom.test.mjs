@@ -49,16 +49,17 @@ globalThis.fetch = async url => ({ ok: true, json: async () => String(url).inclu
 	return { result, calls: readFileSync(log, "utf8") };
 }
 
-test("nueva release abre Pi interactivo sin hacer rebase ni instalar", t => {
+test("nueva release abre Pi interactivo con el mecanismo de reconstrucción", t => {
 	const { result, calls } = scenario(t, "v4.7.0", { describe: "v4.6.0", baseSha: "aaaa", targetSha: "bbbb" });
 	assert.equal(result.status, 0, result.stderr);
 	assert.match(calls, /pi -- Hay una nueva release estable oficial/);
-	assert.match(calls, /pide mi confirmación antes de ejecutarlo/);
 	assert.match(calls, /custom\/PERSONALIZACIONES\.md/);
-	assert.match(calls, /Aunque el rebase no tenga conflictos/);
-	assert.match(calls, /git rebase --onto refs\/tags\/v4\.7\.0 refs\/heads\/release custom/);
+	assert.match(calls, /NO se rebasea ni se fusiona/);
+	assert.match(calls, /custom-v4\.6\.0-archive/);
+	assert.match(calls, /refs\/tags\/v4\.7\.0/);
+	assert.match(calls, /--default-branch release/);
+	assert.match(calls, /No uses rebase, --force ni --force-with-lease/);
 	assert.match(calls, /mover la rama release exactamente a v4\.7\.0/);
-	assert.match(calls, /--force-with-lease solo con autorización expresa/);
 	assert.doesNotMatch(calls, /^git rebase /m);
 	assert.doesNotMatch(calls, /^(pnpm|npm) /m);
 });
