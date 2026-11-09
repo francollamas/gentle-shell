@@ -147,6 +147,77 @@ test("startup banner keeps animating after invalidate and cleans up on dispose",
 	assert.equal(renders, afterDispose, "session_shutdown cleanup stays idle");
 });
 
+test("banner palette follows the active theme accent instead of a fixed table", async (t) => {
+	const home = mkdtempSync(join(tmpdir(), "gp-banner-accent-"));
+	const previousHome = process.env.GENTLE_PI_CONFIG_HOME;
+	process.env.GENTLE_PI_CONFIG_HOME = home;
+	t.after(() => {
+		if (previousHome === undefined) delete process.env.GENTLE_PI_CONFIG_HOME;
+		else process.env.GENTLE_PI_CONFIG_HOME = previousHome;
+		rmSync(home, { recursive: true, force: true });
+	});
+	t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"] });
+	t.mock.method(fs, "readFile", async () => JSON.stringify({ showRose: true, showTextLogo: true, color: "pink" }));
+	syncBuiltinESMExports();
+	t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
+	const argv = process.argv;
+	process.argv = ["node"];
+	t.after(() => { process.argv = argv; });
+	for (const [key, value] of [["rows", 40], ["columns", 160]] as const) {
+		const descriptor = Object.getOwnPropertyDescriptor(process.stdout, key);
+		Object.defineProperty(process.stdout, key, { configurable: true, writable: true, value });
+		t.after(() => descriptor ? Object.defineProperty(process.stdout, key, descriptor) : Reflect.deleteProperty(process.stdout, key));
+	}
+	// A theme that resolves --text-accent to truecolor, as a personal theme file does.
+	const theme = {
+		appearance: "dark" as "dark" | "light",
+		fg: (role: string, text: string) => role === "accent" ? `\x1b[38;2;12;200;90m${text}\x1b[39m` : text,
+	};
+	let header: { render(width: number): string[]; dispose(): void };
+	let start: Function;
+	startup({ on: (name: string, fn: Function) => {
+		if (name === "session_start") start = fn;
+	}, registerCommand() {}, getCommands: () => [], getAllTools: () => [] } as unknown as ExtensionAPI);
+	await start!({}, { hasUI: true, cwd: "/fixture", ui: { theme, setHeader: (factory: Function) => {
+		header = factory({ requestRender() {} }, theme);
+	} } });
+	// Frames from boot cover the flash and sparkle windows, where the highlight is
+	// visible; a light theme must keep them instead of painting them white. The
+	// banner registers its header on a short timer, so let that elapse first.
+	t.mock.timers.tick(50);
+	const darkFrames: string[] = [];
+	for (let frame = 0; frame < 80; frame++) {
+		t.mock.timers.tick(25);
+		darkFrames.push(header!.render(200).join("\n"));
+	}
+	const dark = darkFrames[darkFrames.length - 1];
+	assert.match(dark, /\x1b\[38;2;51;209;116m/, "the dark banner brightens the accent for values");
+	assert.match(dark, /\x1b\[38;2;3;56;25m▒/, "the dark shadow is a dim tint of the accent");
+	assert.doesNotMatch(dark, /\x1b\[38;2;95;30;60m/, "the fixed pink table no longer colors the banner");
+	assert.ok(darkFrames.some((frame) => frame.includes("\x1b[38;2;255;255;255m")), "a dark background keeps its white sparkle");
+
+	theme.appearance = "light";
+	const lightFrames: string[] = [];
+	for (let frame = 0; frame < 40; frame++) {
+		t.mock.timers.tick(25);
+		lightFrames.push(header!.render(200).join("\n"));
+	}
+	const light = lightFrames[lightFrames.length - 1];
+	assert.match(light, /\x1b\[38;2;12;200;90m/, "a light background keeps the accent flat and readable");
+	assert.match(light, /\x1b\[38;2;62;78;69m/, "light labels derive a readable neutral from the accent");
+	assert.match(light, /\x1b\[38;2;187;240;209m▒/, "the light shadow is a pale tint of the accent");
+	assert.doesNotMatch(light, /\x1b\[38;2;3;56;25m/, "switching appearance repaints instead of reusing the cache");
+	assert.ok(lightFrames.every((frame) => !frame.includes("\x1b[38;2;255;255;255m")), "a light background never paints a highlight that vanishes");
+	assert.ok(new Set(lightFrames).size > 2, "the light rose keeps animating instead of staying flat");
+
+	theme.appearance = "dark";
+	// A theme whose accent cannot be reduced to channels keeps the fallback palette.
+	theme.fg = (_role: string, text: string) => text;
+	const fallback = header!.render(200).join("\n");
+	assert.match(fallback, /\x1b\[38;2;95;30;60m▒/, "an unreadable accent keeps the configured fallback palette");
+	header!.dispose();
+});
+
 test("animation modes retain banner lifetime policy, final artwork and approximate duration", async (t) => {
 	const home = mkdtempSync(join(tmpdir(), "gp-banner-animations-"));
 	const previousHome = process.env.GENTLE_PI_CONFIG_HOME;
