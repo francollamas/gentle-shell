@@ -16,6 +16,12 @@ En cada actualización comparar los tags oficiales y el diff de la rama archivad
 - **Superficies:** `extensions/startup-banner.ts`. Los temas Catppuccin **no** viven en este fork: se cargan desde los dotfiles del usuario (`~/.config/pi/themes/`).
 - **Comprobación:** `tests/startup-banner.test.ts`; revisar manualmente el banner con un tema claro, con uno oscuro y con un tema cuyo acento no sea truecolor. Las pruebas automáticas no sustituyen la evaluación del contraste.
 
+## Imágenes arrastradas desde la miniatura del screenshot
+
+- **Intención:** arrastrar la miniatura del screenshot de macOS (⌘⇧4) al prompt debe producir un chip `[Image#N]` con su previsualización, no la ruta de `TemporaryItems` pegada como texto. Los espacios ASCII llegan escapados, pero macOS nombra el archivo `Screenshot … at 8.24.55\u202fPM.png` con U+202F (narrow no-break space) crudo: solo el espacio ASCII separa tokens, porque los terminales escapan exactamente esos y cualquier otro espacio es parte del nombre. Vale igual para un screenshot guardado en disco que se arrastra desde Finder. Es un fallo de upstream: si lo corrigen, retirar esta personalización.
+- **Superficies:** `lib/pasted-image-paths.ts` (`TOKEN_SEPARATOR`). El chip, el registro y el envío siguen siendo los de upstream; no tocar `extensions/gentle-shell.ts`.
+- **Comprobación:** `tests/pasted-image-paths.test.ts` (caso "macOS thumbnail" con archivo real de nombre U+202F), más `tests/image-paste-chips.test.ts` y los casos de chip en `tests/gentle-shell.test.ts`. La prueba automática no sustituye arrastrar de verdad desde la miniatura en la terminal que uses.
+
 ## Fuera de este fork
 
 Varias personalizaciones se mudaron a la configuración de Pi (`~/.config/pi`), que Pi carga como assets propios y no requieren tocar este checkout:
