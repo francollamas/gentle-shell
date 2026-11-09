@@ -69,18 +69,11 @@ test("publishes reviewed Issue Form bodies through a private body file", () => {
 	assert.match(skill, /target-host read-back/i);
 });
 
-function assertRemoteDiscoveryGate(candidate: string) {
-	const gate = candidate.indexOf("## Safe Discovery");
-	const probe = candidate.indexOf("\ngh auth status\n", gate);
-	assert.ok(gate >= 0 && probe > gate);
-	const beforeProbe = candidate.slice(gate, probe);
-	assert.match(beforeProbe, /explicit (?:human|user) authorization.*destination.*operation.*credential\/session/is);
-	assert.match(beforeProbe, /(?:do not|never).*probe.*(?:credential|session).*ambiguity/is);
-}
-
-test("requires remote authorization before authentication or target discovery", () => {
-	assertRemoteDiscoveryGate(skill);
-	assert.throws(() => assertRemoteDiscoveryGate(skill.replace(/explicit (?:human|user) authorization[^\n]*/i, "Remote checks are read-only.")));
+test("clear issue requests authorize discovery while preserving target boundaries", () => {
+	assert.match(skill, /clear request to create or triage an issue authorizes the target reads and operations needed/i);
+	assert.match(skill, /verify `REPO`, `HOST`, and `TARGET` before publication/i);
+	assert.match(skill, /ask when the destination, identity, or intended action is materially ambiguous/i);
+	assert.match(skill, /request to draft an issue alone does not authorize publication/i);
 });
 
 function assertProtectedFormLabels(candidate: string) {
