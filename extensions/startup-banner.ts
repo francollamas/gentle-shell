@@ -119,8 +119,78 @@ export async function writeBannerConfig(config: BannerConfig, configHome = gentl
   await writeFile(path, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
-function paletteColor(color: BannerColor, key: keyof typeof BANNER_PALETTES[BannerColor], text: string): string {
-  const [r, g, b] = BANNER_PALETTES[color][key];
+type RgbTriple = [number, number, number];
+type BannerPalette = { rose: RgbTriple; label: RgbTriple; value: RgbTriple; logoFresh: RgbTriple; logoDim: RgbTriple };
+
+const WHITE: RgbTriple = [255, 255, 255];
+const BLACK: RgbTriple = [0, 0, 0];
+
+/** Blends two colors; amount 0 keeps `from`, 1 reaches `to`. */
+function mixColor(from: RgbTriple, to: RgbTriple, amount: number): RgbTriple {
+  const t = Math.min(1, Math.max(0, amount));
+  return [
+    Math.round(from[0] + (to[0] - from[0]) * t),
+    Math.round(from[1] + (to[1] - from[1]) * t),
+    Math.round(from[2] + (to[2] - from[2]) * t),
+  ];
+}
+
+/**
+ * Reads the active theme accent as RGB by asking the theme to paint a marker:
+ * whatever a theme file declares (truecolor, 256-color index or a variable),
+ * the rendered escape is already resolved by then. Returns undefined when the
+ * result cannot be reduced to channels, so the caller keeps a stable fallback.
+ */
+function accentFromTheme(theme: { fg?: (role: string, text: string) => string }): RgbTriple | undefined {
+  if (typeof theme.fg !== "function") return undefined;
+  let painted: string;
+  try {
+    painted = theme.fg("accent", "██");
+  } catch {
+    return undefined;
+  }
+  if (typeof painted !== "string") return undefined;
+  const truecolor = /\x1b\[38;2;(\d{1,3});(\d{1,3});(\d{1,3})m/.exec(painted);
+  if (truecolor) {
+    return [Number(truecolor[1]), Number(truecolor[2]), Number(truecolor[3])];
+  }
+  const indexed = /\x1b\[38;5;(\d{1,3})m/.exec(painted);
+  if (!indexed) return undefined;
+  const slot = Number(indexed[1]);
+  // The 16 system slots depend on the terminal profile; only the fixed cube is reliable.
+  if (slot < 16) return undefined;
+  return [Math.floor(slot / 36) * 51, Math.floor((slot % 36) / 6) * 51, (slot % 6) * 51];
+}
+
+/**
+ * Builds the banner palette from the theme accent, so a personal theme colors
+ * the banner without a table of per-theme values. Light backgrounds keep the
+ * accent flat and swap the dim slots for pale tints; dark backgrounds let the
+ * accent brighten toward white.
+ */
+function accentPalette(accent: RgbTriple, light: boolean): BannerPalette {
+  const gray = Math.round(0.299 * accent[0] + 0.587 * accent[1] + 0.114 * accent[2]);
+  const neutral: RgbTriple = [gray, gray, gray];
+  if (light) {
+    return {
+      rose: accent,
+      label: mixColor(mixColor(accent, neutral, 0.85), BLACK, 0.45),
+      value: accent,
+      logoFresh: accent,
+      logoDim: mixColor(accent, WHITE, 0.72),
+    };
+  }
+  return {
+    rose: accent,
+    label: mixColor(accent, BLACK, 0.28),
+    value: mixColor(accent, WHITE, 0.16),
+    logoFresh: accent,
+    logoDim: mixColor(accent, BLACK, 0.72),
+  };
+}
+
+function paletteColor(palette: BannerPalette, key: keyof BannerPalette, text: string): string {
+  const [r, g, b] = palette[key];
   return rgb(r, g, b, text);
 }
 
@@ -691,7 +761,6 @@ export default function (pi: ExtensionAPI) {
     // Pi has already started its renderer. Let setHeader schedule the paint;
     // clearing stdout here would leave its previous-frame cache out of sync.
     const bannerConfig = await readBannerConfig();
-    const palette = BANNER_PALETTES[bannerConfig.color];
     const roseBase = padLines(normalizeAscii(ROSE_LARGE_RAW));
     const logoBase = padLines(TEXT_LOGO);
     void warmupLetterStrokes();
@@ -839,7 +908,18 @@ export default function (pi: ExtensionAPI) {
           /** Renders the persistent header grid; memoized per width, tick, mode and stats so static passes reuse the built lines. */
           render(width: number): string[] {
             if (state.mode === "skip") return [];
-            const headerKey = `${width}|${tick}|${state.mode}|${gitBranch}|${mcpServersCount}|${extensionsCount}|${packagesCount}|${backgroundAgentsCount}|${ctx.cwd}|${skills.length}|${customTools.length}`;
+            // The banner follows the active theme instead of a fixed palette; a
+            // theme that cannot be read as RGB keeps the configured fallback.
+            const light = (theme as { appearance?: string }).appearance === "light";
+            const accent = accentFromTheme(theme as { fg?: (role: string, text: string) => string });
+            const palette = accent ? accentPalette(accent, light) : BANNER_PALETTES[bannerConfig.color];
+            // Highlights climb toward light on a dark background, but a white glint
+            // is invisible on a light one: there they climb toward a dark tint of
+            // the accent instead, so the flash and sparkle stay visible.
+            const highlight = light ? mixColor(palette.rose, BLACK, 0.55) : WHITE;
+            const glintColor = light ? mixColor(palette.rose, BLACK, 0.3) : ([255, 245, 252] as RgbTriple);
+            const tipColor = light ? mixColor(palette.rose, BLACK, 0.15) : ([255, 205, 238] as RgbTriple);
+            const headerKey = `${width}|${tick}|${state.mode}|${light}|${accent?.join(",") ?? ""}|${gitBranch}|${mcpServersCount}|${extensionsCount}|${packagesCount}|${backgroundAgentsCount}|${ctx.cwd}|${skills.length}|${customTools.length}`;
             if (headerCache?.key === headerKey) return headerCache.out;
 
             const flashStartTick = 10;
@@ -1090,11 +1170,11 @@ export default function (pi: ExtensionAPI) {
                   const bBase = Math.floor(palette.rose[2] * k);
 
                   if (f > 0.85) {
-                    line += `\x1b[1m\x1b[38;2;255;255;255m${cell.char}\x1b[0m`;
+                    line += `\x1b[1m${rgb(highlight[0], highlight[1], highlight[2], cell.char)}\x1b[0m`;
                   } else {
-                    const r = Math.floor(rBase + (255 - rBase) * f);
-                    const g = Math.floor(gBase + (255 - gBase) * f);
-                    const bColor = Math.floor(bBase + (255 - bBase) * f);
+                    const r = Math.floor(rBase + (highlight[0] - rBase) * f);
+                    const g = Math.floor(gBase + (highlight[1] - gBase) * f);
+                    const bColor = Math.floor(bBase + (highlight[2] - bBase) * f);
                     line += rgb(r, g, bColor, cell.char);
                   }
                   continue;
@@ -1112,35 +1192,35 @@ export default function (pi: ExtensionAPI) {
                     (x === logoLastX || x === logoLastX - 1);
 
                   if (sparkleOnCell) {
-                    line += `\x1b[1m` + rgb(255, 255, 255, "✦") + `\x1b[22m`;
+                    line += `\x1b[1m` + rgb(highlight[0], highlight[1], highlight[2], "✦") + `\x1b[22m`;
                     continue;
                   }
 
                   if (glintOnCell) {
-                    line += `\x1b[1m` + rgb(255, 245, 252, cell.char) + `\x1b[22m`;
+                    line += `\x1b[1m` + rgb(glintColor[0], glintColor[1], glintColor[2], cell.char) + `\x1b[22m`;
                     continue;
                   }
 
                   if (cell.type === "logo-tip") {
-                    line += `\x1b[1m` + rgb(255, 205, 238, cell.char) + `\x1b[22m`;
+                    line += `\x1b[1m` + rgb(tipColor[0], tipColor[1], tipColor[2], cell.char) + `\x1b[22m`;
                   } else if (cell.type === "logo-fresh") {
                     line += cell.char === "▒"
-                      ? paletteColor(bannerConfig.color, "logoDim", cell.char)
-                      : paletteColor(bannerConfig.color, "logoFresh", cell.char);
+                      ? paletteColor(palette, "logoDim", cell.char)
+                      : paletteColor(palette, "logoFresh", cell.char);
                   } else {
                     line += cell.char === "▒"
-                      ? paletteColor(bannerConfig.color, "logoDim", cell.char)
-                      : paletteColor(bannerConfig.color, "value", cell.char);
+                      ? paletteColor(palette, "logoDim", cell.char)
+                      : paletteColor(palette, "value", cell.char);
                   }
                   continue;
                 }
 
                 switch (cell.type) {
                   case "label":
-                    line += paletteColor(bannerConfig.color, "label", cell.char);
+                    line += paletteColor(palette, "label", cell.char);
                     break;
                   case "value":
-                    line += paletteColor(bannerConfig.color, "value", cell.char);
+                    line += paletteColor(palette, "value", cell.char);
                     break;
                   case "dim":
                     line += theme.fg("dim", cell.char);
