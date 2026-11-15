@@ -14,6 +14,12 @@ import { sniffImageMimeType, type ClipboardImage } from "./clipboard-image.ts";
 const MAX_PASTED_PATHS = 8;
 const MAX_PASTED_BYTES = 64 * 1024 * 1024;
 const IMAGE_PATH_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
+// Only ASCII whitespace separates tokens. Terminals escape exactly these when
+// they hand over a path, so any other space is a filename character: macOS puts
+// U+202F before AM/PM in "Screenshot … at 8.24.55\u202fPM.png" and a drop from the
+// screenshot thumbnail sends it raw, and a non-breaking space is a legal name
+// on every platform. A `\s` class would split those paths open.
+const TOKEN_SEPARATOR = /[ \t\n\r\f\v]/;
 
 export interface PastedImagePathOptions {
 	/** Test seam: read a file's bytes. */
@@ -35,7 +41,7 @@ export function parsePathTokens(text: string): string[] {
 	let started = false;
 	for (let index = 0; index < text.length; index += 1) {
 		const char = text[index];
-		if (/\s/.test(char)) {
+		if (TOKEN_SEPARATOR.test(char)) {
 			if (started) { tokens.push(current); current = ""; started = false; }
 			continue;
 		}
