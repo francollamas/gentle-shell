@@ -107,6 +107,24 @@ test("token parsing handles single quotes, double quotes, escapes and newlines",
 	assert.deepEqual(parsePathTokens("'/tmp/it'\\''s.png'"), ["/tmp/it's.png"]);
 });
 
+test("a screenshot dropped from the macOS thumbnail survives its narrow no-break space", () => {
+	// macOS names a screenshot "Screenshot 2026-11-09 at 8.24.55\u202fPM.png" and a
+	// drop from the thumbnail hands it over from TemporaryItems: ASCII spaces
+	// arrive escaped, while U+202F arrives raw because terminals only escape
+	// ASCII whitespace. Treating that character as a separator split the path in
+	// two and left it in the draft as text instead of becoming a chip.
+	const directory = mkdtempSync(join(tmpdir(), "gentle-screenshot-"));
+	const path = join(directory, "Screenshot 2026-11-09 at 8.24.55\u202fPM.png");
+	writeFileSync(path, PNG_2X1);
+	try {
+		const pasted = path.replaceAll(" ", "\\ ");
+		assert.deepEqual(parsePathTokens(pasted), [path]);
+		assert.deepEqual(readPastedImagePaths(pasted, {}).map((image) => image.mimeType), ["image/png"]);
+	} finally {
+		rmSync(directory, { recursive: true, force: true });
+	}
+});
+
 test("an oversized file is rejected before its bytes are read", () => {
 	// A sparse file keeps this cheap while still exceeding the 64 MiB cap.
 	const directory = mkdtempSync(join(tmpdir(), "gentle-pasted-path-"));
